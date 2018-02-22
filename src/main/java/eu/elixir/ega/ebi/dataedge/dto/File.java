@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -29,11 +28,11 @@ import lombok.Setter;
 @Setter
 @Getter
 public class File {
-        private String fileId;
-        private String datasetId;
-        private String fileName;
-        private long fileSize;
-        private String checksum;
-        private String checksumType;
-        private String fileStatus;    
+    private String fileId;
+    private String datasetId;
+    private String fileName;
+    private long fileSize;
+    private String checksum;
+    private String checksumType;
+    private String fileStatus;
 }

@@ -15,15 +15,15 @@
  */
 package eu.elixir.ega.ebi.dataedge.dto;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+import java.sql.Timestamp;
+
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -39,15 +39,15 @@ public class EventEntry implements Serializable {
     private String eventType;
     private String email;
     private Timestamp created;
-    
+
     @Override
     public String toString() {
-            return "EventEntry [eventId=" + eventId + 
-                   ", clientIp=" + clientIp +
-                   ", event=" + event +
-                   ", downloadTicket=" + downloadTicket +
-                   ", eventType=" + eventType +
-                   ", email=" + email +
-                   ", created=" + created + "]";
-    }    
+        return "EventEntry [eventId=" + eventId +
+                ", clientIp=" + clientIp +
+                ", event=" + event +
+                ", downloadTicket=" + downloadTicket +
+                ", eventType=" + eventType +
+                ", email=" + email +
+                ", created=" + created + "]";
+    }
 }

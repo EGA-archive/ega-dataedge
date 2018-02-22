@@ -15,18 +15,18 @@
  */
 package eu.elixir.ega.ebi.dataedge.service;
 
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+
 /**
- *
  * @author asenf
  */
 public interface TicketService {
-    
-    public Object getTicket(Authentication auth, 
+
+    public Object getTicket(Authentication auth,
                             String file_id,
                             String format,
                             int referenceIndex,
@@ -40,7 +40,7 @@ public interface TicketService {
                             HttpServletRequest request,
                             HttpServletResponse response);
 
-    public Object getVariantTicket(Authentication auth, 
+    public Object getVariantTicket(Authentication auth,
                                    String file_id,
                                    String format,
                                    int referenceIndex,

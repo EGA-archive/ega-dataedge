@@ -19,13 +19,12 @@ import eu.elixir.ega.ebi.dataedge.dto.DownloadEntry;
 import eu.elixir.ega.ebi.dataedge.dto.EventEntry;
 
 /**
- *
  * @author asenf
  */
 public interface DownloaderLogService {
-    
+
     public void logDownload(DownloadEntry downloadEntry);
-    
+
     public void logEvent(EventEntry eventEntry);
-    
+
 }

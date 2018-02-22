@@ -17,12 +17,9 @@ package eu.elixir.ega.ebi.dataedge.service.internal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import eu.elixir.ega.ebi.dataedge.dto.DownloadEntry;
 import eu.elixir.ega.ebi.dataedge.dto.EventEntry;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.HttpEntity;
@@ -35,8 +32,12 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.client.AsyncRestTemplate;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
+//import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
 /**
- *
  * @author asenf
  */
 @Service
@@ -45,28 +46,29 @@ import org.springframework.web.client.AsyncRestTemplate;
 public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
 
     private final String SERVICE_URL = "http://DOWNLOADER";
-    
+
     @Autowired
-    AsyncRestTemplate restTemplate;    
+    AsyncRestTemplate restTemplate;
 
     @Override
     //@HystrixCommand
     public void logDownload(DownloadEntry downloadEntry) {
-                
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
- 
+
         // Jackson ObjectMapper to convert requestBody to JSON
         String json = null;
         URI url = null;
         try {
             json = new ObjectMapper().writeValueAsString(downloadEntry);
             url = new URI(SERVICE_URL + "/log/download/");
-        } catch (JsonProcessingException | URISyntaxException ex) {}
-        
+        } catch (JsonProcessingException | URISyntaxException ex) {
+        }
+
         HttpEntity<String> entity = new HttpEntity<>(json, headers);
         //HttpEntity entity = new HttpEntity("parameters", headers);
-        
+
         ListenableFuture<ResponseEntity<String>> futureEntity;
         futureEntity = restTemplate.postForEntity(url, entity, String.class);
 
@@ -81,30 +83,31 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
                     public void onFailure(Throwable t) {
                     }
                 });
-        
+
         // Old Synchronous Call
         //restTemplate.postForObject(SERVICE_URL + "/log/download/", downloadEntry, Void.class);
-      
+
     }
 
     @Override
     //@HystrixCommand
     public void logEvent(EventEntry eventEntry) {
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        
+
         // Jackson ObjectMapper to convert requestBody to JSON
         String json = null;
         URI url = null;
         try {
             json = new ObjectMapper().writeValueAsString(eventEntry);
             url = new URI(SERVICE_URL + "/log/download/");
-        } catch (JsonProcessingException | URISyntaxException ex) {}
-        
+        } catch (JsonProcessingException | URISyntaxException ex) {
+        }
+
         HttpEntity<String> entity = new HttpEntity<>(json, headers);
         //HttpEntity entity = new HttpEntity("parameters", headers);
-        
+
         ListenableFuture<ResponseEntity<String>> futureEntity;
         futureEntity = restTemplate.postForEntity(url, entity, String.class);
 
@@ -119,12 +122,11 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
                     public void onFailure(Throwable t) {
                     }
                 });
-        
+
         // Old Synchronous Call
         //restTemplate.postForObject(SERVICE_URL + "/log/event/", eventEntry, Void.class);
-        
+
     }
-    
-    
-    
+
+
 }

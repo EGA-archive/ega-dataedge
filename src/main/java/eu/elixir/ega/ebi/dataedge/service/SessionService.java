@@ -18,11 +18,10 @@ package eu.elixir.ega.ebi.dataedge.service;
 import eu.elixir.ega.ebi.dataedge.domain.entity.Transfer;
 
 /**
- *
  * @author asenf
  */
 public interface SessionService {
-    
+
     public Transfer getSessionStats(String session_uuid);
-    
+
 }

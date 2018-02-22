@@ -18,46 +18,18 @@ package eu.elixir.ega.ebi.dataedge.service.internal;
 import com.google.common.io.ByteStreams;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
-//import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import eu.elixir.ega.ebi.dataedge.config.GeneralStreamingException;
-import eu.elixir.ega.ebi.dataedge.config.InternalErrorException;
-import eu.elixir.ega.ebi.dataedge.config.NotFoundException;
-import eu.elixir.ega.ebi.dataedge.config.PermissionDeniedException;
-import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
-import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableCachedResStream;
-import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableResStream;
+import eu.elixir.ega.ebi.dataedge.config.*;
 import eu.elixir.ega.ebi.dataedge.domain.entity.Transfer;
-import eu.elixir.ega.ebi.dataedge.domain.repository.TransferRepository;
-import eu.elixir.ega.ebi.dataedge.dto.DownloadEntry;
-import eu.elixir.ega.ebi.dataedge.dto.EventEntry;
-import eu.elixir.ega.ebi.dataedge.dto.File;
-import eu.elixir.ega.ebi.dataedge.dto.FileDataset;
-import eu.elixir.ega.ebi.dataedge.dto.FileIndexFile;
-import eu.elixir.ega.ebi.dataedge.dto.HttpResult;
-import eu.elixir.ega.ebi.dataedge.dto.MyExternalConfig;
+import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import eu.elixir.ega.ebi.dataedge.service.FileService;
-import htsjdk.samtools.CRAMFileWriter;
-import htsjdk.samtools.DefaultSAMRecordFactory;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SamReaderFactory.Option;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.seekablestream.SeekableRESStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.ebi.SeekableCachedResStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -66,6 +38,26 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.MyVCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -75,33 +67,14 @@ import java.net.URL;
 import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.ResponseExtractor;
-import org.springframework.web.util.UriComponentsBuilder;
+
+//import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 /**
- *
  * @author asenf
  */
 @Service
@@ -111,30 +84,27 @@ public class RemoteFileServiceImpl implements FileService {
 
     private final String SERVICE_URL = "http://DOWNLOADER";
     private final String RES_URL = "http://RES";
-    
+
     @Autowired
     RestTemplate restTemplate;
-    
+
     @Autowired
     RetryTemplate retryTemplate;
 
     // Database Repositories/Services
-    
+
     //@Autowired
     //private TransferRepository transferRepository;
-    
+    @Autowired
+    MyExternalConfig externalConfig;
     @Autowired
     private DownloaderLogService downloaderLogService;
-    
     @Autowired
     private EurekaClient discoveryClient;
 
-    @Autowired
-    MyExternalConfig externalConfig;
-    
     @Override
     //@HystrixCommand
-    public void getFile(Authentication auth, 
+    public void getFile(Authentication auth,
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
@@ -152,25 +122,25 @@ public class RemoteFileServiceImpl implements FileService {
         long timeDelta = 0;
         HttpResult xferResult = null;
         MessageDigest outDigest = null;
-        
+
         if (reqFile != null) {
             // Build Header - Specify UUID (Allow later stats query regarding this transfer)
             UUID dlIdentifier = UUID.randomUUID();
             String headerValue = dlIdentifier.toString();
             response = setHeaders(response, headerValue);
-        
+
             // Content Length of response (if available)
             response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
 
             // If byte range, set response 206
             if (startCoordinate > 0 || endCoordinate > 0) {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                response.addHeader("Content-Range", "bytes " + startCoordinate + 
-                        "-" + (endCoordinate-1) + "/" + reqFile.getFileSize());
-                if (endCoordinate-startCoordinate < Integer.MAX_VALUE)
-                    response.setBufferSize((int) (endCoordinate-startCoordinate));
+                response.addHeader("Content-Range", "bytes " + startCoordinate +
+                        "-" + (endCoordinate - 1) + "/" + reqFile.getFileSize());
+                if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
+                    response.setBufferSize((int) (endCoordinate - startCoordinate));
             }
-            
+
             String user_email = auth.getName(); // For Logging
 
             try {
@@ -193,7 +163,7 @@ public class RemoteFileServiceImpl implements FileService {
                         MessageDigest inDigest = MessageDigest.getInstance("MD5");
                         DigestInputStream inDigestStream = new DigestInputStream(response_.getBody(), inDigest);
                         if (inDigestStream == null) {
-System.out.println("RemoteFileServiceImpl Error 0: ");
+                            System.out.println("RemoteFileServiceImpl Error 0: ");
                             throw new GeneralStreamingException("Unable to obtain Input Stream", 2);
                         }
 
@@ -205,8 +175,8 @@ System.out.println("RemoteFileServiceImpl Error 0: ");
                         outDigestStream.close();
                         inHashtext = getDigestText(inDigest.digest());
                     } catch (Throwable t) {
-System.out.println("RemoteFileServiceImpl Error 1: " + t.toString());
-                        inHashtext = t.getMessage();                        
+                        System.out.println("RemoteFileServiceImpl Error 1: " + t.toString());
+                        inHashtext = t.getMessage();
                         throw new GeneralStreamingException(t.toString(), 7);
                     }
 
@@ -220,16 +190,17 @@ System.out.println("RemoteFileServiceImpl Error 1: " + t.toString());
                  * then call getResUri with the file path instead of the file ID
                  * [...]getResUri(reqFile.getFileName(),destinationFormat[...]
                  */
-                
+
                 // Build Request URI with Ticket Parameters and get requested file from RES (timed for statistics)
                 timeDelta = System.currentTimeMillis();
-                int cnt = 2; do {
-                    xferResult = restTemplate.execute(getResUri(file_id,destinationFormat,destinationKey,startCoordinate,endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
-                } while (xferResult.getBytes()<=0 && cnt-->0);
+                int cnt = 2;
+                do {
+                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
+                } while (xferResult.getBytes() <= 0 && cnt-- > 0);
                 timeDelta = System.currentTimeMillis() - timeDelta;
 
             } catch (Throwable t) { // Log Error!
-System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
+                System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
                 EventEntry eev = getEventEntry(t, "TODO ClientIp", "Direct Download", user_email);
                 downloaderLogService.logEvent(eev);
 
@@ -244,24 +215,24 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
                     String outHashtext = getDigestText(outDigest.digest());
 
                     // Store with UUID for later retrieval - in case of error or success            
-        //            Transfer transfer = new Transfer(headerValue,
-        //                                             new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()),
-        //                                             inHashtext,
-        //                                             outHashtext,
-        //                                             xferResult.getBytes(),
-        //                                             xferResult.getBytes(),
-        //                                             "DATAEDGE");
-        //            Transfer save = transferRepository.save(transfer);
+                    //            Transfer transfer = new Transfer(headerValue,
+                    //                                             new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()),
+                    //                                             inHashtext,
+                    //                                             outHashtext,
+                    //                                             xferResult.getBytes(),
+                    //                                             xferResult.getBytes(),
+                    //                                             "DATAEDGE");
+                    //            Transfer save = transferRepository.save(transfer);
 
                     // Compare - Sent MD5 equals Received MD5? - Log Download in DB
                     boolean success = outHashtext.equals(inHashtext);
-                    double speed = (xferResult.getBytes()/1024.0/1024.0)/(timeDelta/1000.0);
+                    double speed = (xferResult.getBytes() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
                     long bytes = 0;
                     System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
-                    DownloadEntry dle = getDownloadEntry(success, speed, file_id, 
+                    DownloadEntry dle = getDownloadEntry(success, speed, file_id,
                             "TODO ClientIp", user_email, destinationFormat,
                             startCoordinate, endCoordinate, bytes);
-                    downloaderLogService.logDownload(dle);                
+                    downloaderLogService.logDownload(dle);
                 }
             }
         }
@@ -269,11 +240,11 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
 
     @Override
     //@HystrixCommand
-    @Cacheable(cacheNames="fileHead")
-    public void getFileHead(Authentication auth, 
-                        String file_id,
-                        HttpServletRequest request,
-                        HttpServletResponse response) {
+    @Cacheable(cacheNames = "fileHead")
+    public void getFileHead(Authentication auth,
+                            String file_id,
+                            HttpServletRequest request,
+                            HttpServletResponse response) {
 
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request); // request added for ELIXIR
@@ -284,42 +255,42 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
             UUID dlIdentifier = UUID.randomUUID();
             String headerValue = dlIdentifier.toString();
             response = setHeaders(response, headerValue);
-        
+
             // Content Length of response (if available)
             response.setContentLengthLong(getContentLength(reqFile, "plain", 0, 0));
             response.addHeader("X-Content-Length", String.valueOf(getContentLength(reqFile, "plain", 0, 0)));
         }
     }
-    
+
     /*
      * GA4GH / Semantic Functionality: Use SAMTools to access a File in Cleversafe
      */
-    
+
     @Override
     //@HystrixCommand
-    @Cacheable(cacheNames="headerFile")
-    public Object getFileHeader(Authentication auth, 
-                                String file_id, 
-                                String destinationFormat, 
+    @Cacheable(cacheNames = "headerFile")
+    public Object getFileHeader(Authentication auth,
+                                String file_id,
+                                String destinationFormat,
                                 String destinationKey) {
         Object header = null;
-        
+
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, null);
-        if (reqFile!=null) {
-            URL resUrl = null;
+        if (reqFile != null) {
+            URL resUrl;
             try {
                 resUrl = new URL(resUrl() + "/file/archive/" + reqFile.getFileId()); // Just specify file ID
-                
-                SeekableStream cIn = new EgaSeekableResStream(resUrl); // Deals with coordinates
+
+                SeekableStream cIn = new SeekableRESStream(resUrl, null, -1); // Deals with coordinates
                 //SeekableStream cIn = new EgaSeekableCachedResStream(resUrl); // Deals with coordinates
 
                 // SamReader with input stream based on RES URL
-                SamReader reader = 
-                    SamReaderFactory.make() 
-                      .validationStringency(ValidationStringency.LENIENT) 
-                      .samRecordFactory(DefaultSAMRecordFactory.getInstance()) 
-                      .open(SamInputResource.of(cIn));  
+                SamReader reader =
+                        SamReaderFactory.make()
+                                .validationStringency(ValidationStringency.LENIENT)
+                                .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                                .open(SamInputResource.of(cIn));
                 header = reader.getFileHeader();
                 reader.close();
             } catch (MalformedURLException ex) {
@@ -328,40 +299,40 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
                 Logger.getLogger(RemoteFileServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        
+
         return header;
     }
 
     @Override
     //@HystrixCommand
-    public void getById(Authentication auth, 
+    public void getById(Authentication auth,
                         String idType,
-                        String accession, 
-                        String format, 
+                        String accession,
+                        String format,
                         String reference,
-                        long start, 
-                        long end, 
-                        List<String> fields, 
-                        List<String> tags, 
-                        List<String> notags, 
+                        long start,
+                        long end,
+                        List<String> fields,
+                        List<String> tags,
+                        List<String> notags,
                         boolean header,
-                        String destinationFormat, 
-                        String destinationKey, 
-                        HttpServletRequest request, 
+                        String destinationFormat,
+                        String destinationKey,
+                        HttpServletRequest request,
                         HttpServletResponse response) {
-        
+
         // Adding a content header in the response: binary data
         response.addHeader("Content-Type", MediaType.valueOf("application/octet-stream").toString());
-        
+
         String file_id = "";
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
         }
-        
+
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request);
-        if (reqFile!=null) {
-            
+        if (reqFile != null) {
+
             // SeekableStream on top of RES (using Eureka to obtain RES Base URL)
             SamInputResource inputResource = null;
             CRAMReferenceSource x = null;
@@ -370,22 +341,22 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
             try {
                 String extension = "";
                 if (reqFile.getFileName().contains(".bam")) {
-                        extension = ".bam";
+                    extension = ".bam";
                 } else if (reqFile.getFileName().contains(".cram")) {
-                        extension = ".cram";
-                        x = new ReferenceSource(new java.io.File(externalConfig.getCramFastaReference()));
+                    extension = ".cram";
+                    x = new ReferenceSource(new java.io.File(externalConfig.getCramFastaReference()));
                 }
-                
+
                 // BAM/CRAM File
                 URL resUrl = new URL(resUrl() + "file/archive/" + reqFile.getFileId()); // Just specify file ID
                 //SeekableStream cIn = (new EgaSeekableResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
-                SeekableStream cIn = (new EgaSeekableCachedResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
+                SeekableStream cIn = (new SeekableCachedResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
                 //bIn = new SeekableBufferedStream(cIn);
                 // BAI/CRAI File
                 FileIndexFile fileIndexFile = getFileIndexFile(reqFile.getFileId());
                 File reqIndexFile = getReqFile(fileIndexFile.getIndexFileId(), auth, null);
                 URL indexUrl = new URL(resUrl() + "file/archive/" + fileIndexFile.getIndexFileId()); // Just specify index ID
-                SeekableStream cIndexIn = (new EgaSeekableCachedResStream(indexUrl, null, null, reqIndexFile.getFileSize()));
+                SeekableStream cIndexIn = (new SeekableCachedResStream(indexUrl, null, null, reqIndexFile.getFileSize()));
                 //bIndexIn = new SeekableBufferedStream(cIndexIn);
 
                 inputResource = SamInputResource.of(cIn).index(cIndexIn);
@@ -394,30 +365,30 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
             }
 
             // SamReader with input stream based on RES URL (should work for BAM or CRAM)
-            SamReader reader = (x==null)?
-                (SamReaderFactory.make()            // BAM File 
-                  .validationStringency(ValidationStringency.LENIENT)
-                  .enable(Option.CACHE_FILE_BASED_INDEXES)
-                  .samRecordFactory(DefaultSAMRecordFactory.getInstance())
-                  .open(inputResource)):
-                (SamReaderFactory.make()            // CRAM File
-                  .referenceSource(x)
-                  .validationStringency(ValidationStringency.LENIENT)
-                  .enable(Option.CACHE_FILE_BASED_INDEXES)
-                  .samRecordFactory(DefaultSAMRecordFactory.getInstance())
-                  .open(inputResource));
-            
+            SamReader reader = (x == null) ?
+                    (SamReaderFactory.make()            // BAM File
+                            .validationStringency(ValidationStringency.LENIENT)
+                            .enable(Option.CACHE_FILE_BASED_INDEXES)
+                            .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                            .open(inputResource)) :
+                    (SamReaderFactory.make()            // CRAM File
+                            .referenceSource(x)
+                            .validationStringency(ValidationStringency.LENIENT)
+                            .enable(Option.CACHE_FILE_BASED_INDEXES)
+                            .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                            .open(inputResource));
+
             SAMFileHeader fileHeader = reader.getFileHeader();
             int iIndex = fileHeader.getSequenceIndex(reference);
 
             // Handle Request here - query Reader according to parameters
-            int iStart = (int)(start);
-            int iEnd = (int)(end);
+            int iStart = (int) (start);
+            int iEnd = (int) (end);
             SAMRecordIterator query = null;
             if (iIndex > -1) { // ref was specified
                 query = reader.queryOverlapping(reference, iStart, iEnd);
-            } else if ((reference==null || reference.isEmpty()) && iIndex == -1) {
-                throw new GeneralStreamingException("Unknown reference: " + reference, 40);                
+            } else if ((reference == null || reference.isEmpty()) && iIndex == -1) {
+                throw new GeneralStreamingException("Unknown reference: " + reference, 40);
             } else { // no ref - ignore start/end
                 query = reader.iterator();
             }
@@ -425,14 +396,14 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
             // Open return output stream - instatiate a SamFileWriter
             OutputStream out = null;
             SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-            if (query!=null) try {
+            if (query != null) try {
                 out = response.getOutputStream();
                 if (format.equalsIgnoreCase("BAM")) {
                     try (SAMFileWriter writer = writerFactory.makeBAMWriter(fileHeader, true, out)) { // writes out header
                         Stream<SAMRecord> stream = query.stream();
                         Iterator<SAMRecord> iterator = stream.iterator();
                         while (iterator.hasNext()) {
-                            SAMRecord next = filterMe(iterator.next(), tags, notags, fields);                            
+                            SAMRecord next = filterMe(iterator.next(), tags, notags, fields);
                             writer.addAlignment(next);
                         }
                         writer.close();
@@ -449,79 +420,83 @@ System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
                         writer.close();
                     }
                 }
-                
+
             } catch (Throwable t) { // Log Error!
                 EventEntry eev = getEventEntry(t, "TODO ClientIp", "Direct GA4GH Download", auth.getName());
                 downloaderLogService.logEvent(eev);
                 System.out.println("ERROR 4 " + t.toString());
                 throw new GeneralStreamingException(t.toString(), 6);
             } finally {
-                if (out != null) try {out.close();} catch (IOException ex) {;}
+                if (out != null) try {
+                    out.close();
+                } catch (IOException ex) {
+                    ;
+                }
             }
         } else { // If no 404 was found, this is a permissions denied error
             throw new PermissionDeniedException(accession);
         }
     }
-    
+
     @Override
     //@HystrixCommand
-    public void getVCFById(Authentication auth, 
+    public void getVCFById(Authentication auth,
                            String idType,
-                           String accession, 
-                           String format, 
+                           String accession,
+                           String format,
                            String reference,
-                           long start, 
-                           long end, 
-                           List<String> fields, 
-                           List<String> tags, 
-                           List<String> notags, 
+                           long start,
+                           long end,
+                           List<String> fields,
+                           List<String> tags,
+                           List<String> notags,
                            boolean header,
-                           String destinationFormat, 
-                           String destinationKey, 
-                           HttpServletRequest request, 
+                           String destinationFormat,
+                           String destinationKey,
+                           HttpServletRequest request,
                            HttpServletResponse response) {
-        
+
         // Adding a content header in the response: binary data
         response.addHeader("Content-Type", MediaType.valueOf("application/octet-stream").toString());
-        
+
         String file_id = "";
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
         }
-        
+
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request);
-        if (reqFile!=null) {
+        if (reqFile != null) {
             URL resUrl, indexUrl;
             MyVCFFileReader reader;
-            
+
             try {
                 String extension = "";
                 if (reqFile.getFileName().contains(".vcf")) {
-                        extension = ".vcf";
+                    extension = ".vcf";
                 } else if (reqFile.getFileName().contains(".bcf")) {
-                        extension = ".bcf";
+                    extension = ".bcf";
                 }
-                
+
                 String[] vcf_ext = {"?destinationFormat=plain&extension=.vcf", "?destinationFormat=plain&extension=.vcf.tbi"};
-                if ( reqFile.getFileName().toLowerCase().endsWith(".gz") || 
-                     reqFile.getFileName().toLowerCase().endsWith(".gz.cip")) {
-                     vcf_ext[0] += ".gz";
-                     vcf_ext[1] = "?destinationFormat=plain&extension=.vcf.gz.tbi";
+                if (reqFile.getFileName().toLowerCase().endsWith(".gz") ||
+                        reqFile.getFileName().toLowerCase().endsWith(".gz.cip")) {
+                    vcf_ext[0] += ".gz";
+                    vcf_ext[1] = "?destinationFormat=plain&extension=.vcf.gz.tbi";
                 }
-                
+
                 // VCF File
                 resUrl = new URL(resUrl() + "file/archive/" + reqFile.getFileId() + vcf_ext[0]); // Just specify file ID
                 FileIndexFile fileIndexFile = getFileIndexFile(reqFile.getFileId());
                 indexUrl = new URL(resUrl() + "file/archive/" + fileIndexFile.getIndexFileId() + vcf_ext[1]); // Just specify index ID
 
-System.out.println("Opening Reader!! ");
+                System.out.println("Opening Reader!! ");
                 // VCFFileReader with input stream based on RES URL
-                reader = new MyVCFFileReader(resUrl.toString(), 
-                                             indexUrl.toString(),
-                                             false,
-                                             downloaderUrl());
-System.out.println("Reader!! ");
+                reader = new MyVCFFileReader(resUrl.toString(),
+                        indexUrl.toString(),
+                        false,
+                        downloaderUrl());
+                System.out.println("Reader!! ");
             } catch (Exception ex) {
                 throw new InternalErrorException(ex.getMessage(), "19");
             } catch (Throwable th) {
@@ -529,13 +504,13 @@ System.out.println("Reader!! ");
             }
 
             VCFHeader fileHeader = reader.getFileHeader();
-System.out.println("Header!! " + fileHeader.toString());
+            System.out.println("Header!! " + fileHeader.toString());
 
             // Handle Request here - query Reader according to parameters
-            int iStart = (int)(start);
-            int iEnd = (int)(end);
+            int iStart = (int) (start);
+            int iEnd = (int) (end);
             CloseableIterator<VariantContext> query = null;
-            if ((iEnd-iStart) > 0 && reference != null && reference.length() > 0) { // ref was specified
+            if ((iEnd - iStart) > 0 && reference != null && reference.length() > 0) { // ref was specified
                 query = reader.query(reference, iStart, iEnd);
             } else { // no ref - ignore start/end
                 query = reader.iterator();
@@ -545,7 +520,7 @@ System.out.println("Header!! " + fileHeader.toString());
             OutputStream out;
             try {
                 out = response.getOutputStream();
-                
+
                 VariantContextWriterBuilder builder = new VariantContextWriterBuilder().
                         setOutputVCFStream(out).
                         setReferenceDictionary(fileHeader.getSequenceDictionary()).
@@ -561,31 +536,31 @@ System.out.println("Header!! " + fileHeader.toString());
 
                 CloserUtil.close(query);
                 CloserUtil.close(reader);
-                
+
                 writer.close();
             } catch (IOException ex) {
                 throw new InternalErrorException(ex.getMessage(), "20");
             }
-            
-                
+
+
         } else { // If no 404 was found, this is a permissions denied error
             throw new PermissionDeniedException(accession);
         }
     }
-    
+
     /*
      * Helper Functions
      */
     //@HystrixCommand
     private String getDigestText(byte[] inDigest) {
-        BigInteger bigIntIn = new BigInteger(1,inDigest);
+        BigInteger bigIntIn = new BigInteger(1, inDigest);
         String hashtext = bigIntIn.toString(16);
-        while(hashtext.length() < 32 ){
-            hashtext = "0"+hashtext;
-        }                    
+        while (hashtext.length() < 32) {
+            hashtext = "0" + hashtext;
+        }
         return hashtext;
     }
-    
+
     //@HystrixCommand
     private HttpServletResponse setHeaders(HttpServletResponse response, String headerValue) {
         // Set headers for the response
@@ -597,31 +572,31 @@ System.out.println("Header!! " + fileHeader.toString());
         System.out.println("MIME type: " + mimeType);
 
         // set content attributes for the response
-        response.setContentType(mimeType);        
-        
+        response.setContentType(mimeType);
+
         return response;
     }
-    
+
     //@HystrixCommand
     private URI getResUri(String fileStableIdPath,
                           String destFormat,
                           String destKey,
                           Long startCoord,
                           Long endCoord) {
-        destFormat = destFormat.equals("AES")?"aes128":destFormat; // default to 128-bit if not specified
+        destFormat = destFormat.equals("AES") ? "aes128" : destFormat; // default to 128-bit if not specified
         String url = RES_URL + "/file";
         if (fileStableIdPath.startsWith("EGAF")) { // If an ID is specified - resolve this in RES
             url += "/archive/" + fileStableIdPath;
         }
-        
+
         // Build components based on Parameters provided
         UriComponentsBuilder builder = null;
-        
-        if (startCoord==0 && endCoord==0 && destFormat.equalsIgnoreCase("plain")) {
+
+        if (startCoord == 0 && endCoord == 0 && destFormat.equalsIgnoreCase("plain")) {
             builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("destinationFormat", destFormat)
                     .queryParam("filePath", fileStableIdPath); // TEST!!
-        } else if (startCoord==0 && endCoord==0) {
+        } else if (startCoord == 0 && endCoord == 0) {
             builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("destinationFormat", destFormat)
                     .queryParam("destinationKey", destKey)
@@ -643,7 +618,7 @@ System.out.println("Header!! " + fileHeader.toString());
 
         return builder.build().encode().toUri();
     }
-    
+
     //@HystrixCommand
     private Transfer getResSession(String resSession) {
         Transfer sessionResponse = null;
@@ -654,51 +629,51 @@ System.out.println("Header!! " + fileHeader.toString());
         }
         return sessionResponse;
     }
-    
+
     //@HystrixCommand
     private DownloadEntry getDownloadEntry(boolean success, double speed, String fileId,
-                                                                          String clientIp,
-                                                                          String email,
-                                                                          String encryptionType,
-                                                                          long startCoordinate,
-                                                                          long endCoordinate,
-                                                                          long bytes) {
+                                           String clientIp,
+                                           String email,
+                                           String encryptionType,
+                                           long startCoordinate,
+                                           long endCoordinate,
+                                           long bytes) {
         DownloadEntry dle = new DownloadEntry();
-            dle.setDownloadLogId(0L);
-            dle.setDownloadSpeed(speed);
-            dle.setDownloadStatus(success?"success":"failed");
-            dle.setFileId(fileId);
-            dle.setClientIp(clientIp);
-            dle.setEmail(email);
-            dle.setDownloadProtocol("http");
-            dle.setServer("DATAEDGE");
-            dle.setEncryptionType(encryptionType);
-            dle.setStartCoordinate(startCoordinate);
-            dle.setEndCoordinate(endCoordinate);
-            dle.setBytes(bytes);
-            dle.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime())); 
+        dle.setDownloadLogId(0L);
+        dle.setDownloadSpeed(speed);
+        dle.setDownloadStatus(success ? "success" : "failed");
+        dle.setFileId(fileId);
+        dle.setClientIp(clientIp);
+        dle.setEmail(email);
+        dle.setDownloadProtocol("http");
+        dle.setServer("DATAEDGE");
+        dle.setEncryptionType(encryptionType);
+        dle.setStartCoordinate(startCoordinate);
+        dle.setEndCoordinate(endCoordinate);
+        dle.setBytes(bytes);
+        dle.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()));
 
         return dle;
     }
-    
+
     //@HystrixCommand
     private EventEntry getEventEntry(Throwable t, String clientIp,
-                                                  String ticket,
-                                                  String email) {
+                                     String ticket,
+                                     String email) {
         EventEntry eev = new EventEntry();
-            eev.setEventId("0");
-            eev.setClientIp(clientIp);
-            eev.setEvent(t.toString());
-            eev.setDownloadTicket(ticket);
-            eev.setEventType("Error");
-            eev.setEmail(email);
-            eev.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime())); 
-        
+        eev.setEventId("0");
+        eev.setClientIp(clientIp);
+        eev.setEvent(t.toString());
+        eev.setDownloadTicket(ticket);
+        eev.setEventType("Error");
+        eev.setEmail(email);
+        eev.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()));
+
         return eev;
     }
-    
+
     //@HystrixCommand
-    @Cacheable(cacheNames="reqFile")
+    @Cacheable(cacheNames = "reqFile")
     private File getReqFile(String file_id, Authentication auth, HttpServletRequest request) {
 
         // Obtain all Authorised Datasets (Provided by EGA AAI)
@@ -710,36 +685,37 @@ System.out.println("Header!! " + fileHeader.toString());
                 GrantedAuthority next = iterator.next();
                 permissions.add(next.getAuthority());
             }
-        } else if (request!=null) { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
+        } else if (request != null) { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
             try {
                 List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
                 if (permissions_ != null && permissions_.size() > 0) {
-                    for (String ds:permissions_) {
+                    for (String ds : permissions_) {
                         if (ds != null) {
                             permissions.add(ds);
                         }
                     }
-                }            
-            } catch (Exception ex) {}
+                }
+            } catch (Exception ex) {
+            }
         }
-        
+
         ResponseEntity<FileDataset[]> forEntityDataset = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}/datasets", FileDataset[].class, file_id);
-        FileDataset[] bodyDataset = forEntityDataset.getBody();        
-        
+        FileDataset[] bodyDataset = forEntityDataset.getBody();
+
         File reqFile = null;
         ResponseEntity<File[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", File[].class, file_id);
         File[] body = forEntity.getBody();
-        if (body!=null && bodyDataset!=null) {
-            for (FileDataset f:bodyDataset) {
+        if (body != null && bodyDataset != null) {
+            for (FileDataset f : bodyDataset) {
                 String dataset_id = f.getDatasetId();
-                if (permissions.contains(dataset_id) && body.length>=1) {
+                if (permissions.contains(dataset_id) && body.length >= 1) {
                     reqFile = body[0];
                     reqFile.setDatasetId(dataset_id);
                     break;
                 }
             }
-            
-            if (reqFile!=null) {
+
+            if (reqFile != null) {
                 // If there's no file size in the database, obtain it from RES
                 if (reqFile.getFileSize() == 0) {
                     ResponseEntity<Long> forSize = restTemplate.getForEntity(RES_URL + "/file/archive/{file_id}/size", Long.class, file_id);
@@ -756,9 +732,9 @@ System.out.println("Header!! " + fileHeader.toString());
 
     //@HystrixCommand
     private String mapRunToFile(String runId) {
-        
+
         // Can't access Runs yet... TODO
-        
+
         return "";
     }
 
@@ -766,20 +742,21 @@ System.out.println("Header!! " + fileHeader.toString());
     public String resUrl() {
         InstanceInfo instance = discoveryClient.getNextServerFromEureka("RES", false);
         return instance.getHomePageUrl();
-    }    
+    }
+
     //@HystrixCommand
     public String downloaderUrl() {
         InstanceInfo instance = discoveryClient.getNextServerFromEureka("DOWNLOADER", false);
         return instance.getHomePageUrl();
-    }    
+    }
 
     //@HystrixCommand
-    @Cacheable(cacheNames="indexFile")
+    @Cacheable(cacheNames = "indexFile")
     private FileIndexFile getFileIndexFile(String file_id) {
         FileIndexFile indexFile = null;
         ResponseEntity<FileIndexFile[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}/index", FileIndexFile[].class, file_id);
         FileIndexFile[] body = forEntity.getBody();
-        if (body!=null && body.length>=1) {
+        if (body != null && body.length >= 1) {
             indexFile = body[0];
         }
         return indexFile;
@@ -787,82 +764,82 @@ System.out.println("Header!! " + fileHeader.toString());
 
     @Override
     //@HystrixCommand
-    @Cacheable(cacheNames="fileSize")
-    public ResponseEntity getHeadById(Authentication auth, 
-                            String idType, 
-                            String accession, 
-                            HttpServletRequest request, 
-                            HttpServletResponse response) {
+    @Cacheable(cacheNames = "fileSize")
+    public ResponseEntity getHeadById(Authentication auth,
+                                      String idType,
+                                      String accession,
+                                      HttpServletRequest request,
+                                      HttpServletResponse response) {
         String file_id = "";
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
         }
-        
+
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, null);
-        if (reqFile!=null) {
-            response.addHeader("Content-Length", String.valueOf(reqFile.getFileSize()) );
+        if (reqFile != null) {
+            response.addHeader("Content-Length", String.valueOf(reqFile.getFileSize()));
             return new ResponseEntity(HttpStatus.OK);
         }
-        
+
         return new ResponseEntity(HttpStatus.UNAUTHORIZED);
     }
 
     private SAMRecord filterMe(SAMRecord record, List<String> fields, List<String> tags, List<String> notags) {
         // Default - leave record as it is
-        if (fields==null && tags==null && notags==null) return record;
-        
+        if (fields == null && tags == null && notags == null) return record;
+
         List<SAMRecord.SAMTagAndValue> attributes = record.getAttributes();
         record.clearAttributes();
-        
+
         // If tags is specified, without listing any, remove all tags.
-        if (tags!=null && tags.size()==0) return record;
-        
+        if (tags != null && tags.size() == 0) return record;
+
         // If specific tags are specified
         Iterator<SAMRecord.SAMTagAndValue> iterator = attributes.iterator();
         while (iterator.hasNext()) {
             SAMRecord.SAMTagAndValue nextTag = iterator.next();
-            if ( (tags!=null && tags.contains(nextTag.tag)) ||
-                 (notags!=null && !notags.contains(nextTag.tag)) ) {
+            if ((tags != null && tags.contains(nextTag.tag)) ||
+                    (notags != null && !notags.contains(nextTag.tag))) {
                 record.setAttribute(nextTag.tag, nextTag.value);
-            } else if ( (tags!=null && tags.contains(nextTag.tag)) ||
-                 (notags!=null && !notags.contains(nextTag.tag)) ) {
+            } else if ((tags != null && tags.contains(nextTag.tag)) ||
+                    (notags != null && !notags.contains(nextTag.tag))) {
                 throw new GeneralStreamingException("Tag value specified in tags and notags: " + nextTag.tag, 80);
             }
         }
-        
+
         // Is specific fields are specified
         // TODO
-        
+
         return record;
     }
-    
+
     private VariantContext filterMe(VariantContext context, List<String> fields, List<String> tags, List<String> notags) {
         // Default - leave record as it is
-        if (fields==null && tags==null && notags==null) return context;
-        
+        if (fields == null && tags == null && notags == null) return context;
+
         Map<String, Object> attributes = context.getAttributes();
 
         // TODO  
-        
+
         return context;
     }
 
     private long getContentLength(File reqFile, String destinationFormat, long startCoordinate, long endCoordinate) {
         long length = 0;
-        
+
         // EncryptionFormat
         int prefix = 16;
         if (destinationFormat.equalsIgnoreCase("plain"))
             prefix = 0;
-        
+
         // Range specified?
         if (startCoordinate > 0 || endCoordinate > 0) {
             length = endCoordinate - startCoordinate;
         } else {
             length = reqFile.getFileSize() - 16;
         }
-        
+
         return (length + prefix);
     }
 

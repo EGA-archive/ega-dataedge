@@ -19,13 +19,12 @@ import eu.elixir.ega.ebi.dataedge.dto.File;
 import org.springframework.security.core.Authentication;
 
 /**
- *
  * @author asenf
  */
 public interface FileMetaService {
-    
+
     public File getFile(Authentication auth, String file_id);
 
     public Iterable<File> getDatasetFiles(String dataset_id);
-    
+
 }
