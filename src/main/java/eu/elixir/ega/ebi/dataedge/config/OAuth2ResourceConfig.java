@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -87,9 +88,10 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
                 return myAccessTokenConverter;
 		//return new DefaultAccessTokenConverter();
 	}
-/*	
-        @Primary
+	
 	@Bean
+	@Profile("enable-aai")
+	@Primary
 	public RemoteTokenServices remoteTokenServices(final @Value("${auth.server.url}") String checkTokenUrl,
 			final @Value("${auth.server.clientId}") String clientId,
 			final @Value("${auth.server.clientsecret}") String clientSecret) {
@@ -103,6 +105,7 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
 	}
         
 	@Bean
+	@Profile("enable-aai")
 	public RemoteTokenServices remoteZuulTokenServices(final @Value("${auth.zuul.server.url}") String checkTokenUrl,
 			final @Value("${auth.zuul.server.clientId}") String clientId,
 			final @Value("${auth.zuul.server.clientsecret}") String clientSecret) {
@@ -114,8 +117,8 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
 		//remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
 		return remoteTokenServices;
 	}
-*/
-        @Primary
+
+/*        @Primary
 	@Bean
 	public RemoteTokenServices remoteTokenServices(HttpServletRequest request, 
 	//public RemoteTokenServices combinedTokenServices(HttpServletRequest request, 
@@ -144,5 +147,5 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
                 }
                 
 		return remoteTokenServices;
-	}
+	}*/
 }
