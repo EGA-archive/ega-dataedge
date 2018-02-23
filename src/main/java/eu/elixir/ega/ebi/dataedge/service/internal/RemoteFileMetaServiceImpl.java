@@ -16,25 +16,26 @@
 package eu.elixir.ega.ebi.dataedge.service.internal;
 
 //import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
 import eu.elixir.ega.ebi.dataedge.dto.File;
 import eu.elixir.ega.ebi.dataedge.dto.FileDataset;
 import eu.elixir.ega.ebi.dataedge.service.FileMetaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 
 /**
- *
  * @author asenf
  */
 @Service
@@ -43,13 +44,13 @@ import org.springframework.security.core.GrantedAuthority;
 public class RemoteFileMetaServiceImpl implements FileMetaService {
 
     private final String SERVICE_URL = "http://DOWNLOADER";
-    
+
     @Autowired
     RestTemplate restTemplate;
 
     @Override
     //@HystrixCommand
-    @Cacheable(cacheNames="fileFile")
+    @Cacheable(cacheNames = "fileFile")
     public File getFile(Authentication auth, String file_id) {
         ResponseEntity<FileDataset[]> forEntityDataset = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}/datasets", FileDataset[].class, file_id);
         FileDataset[] bodyDataset = forEntityDataset.getBody();
@@ -62,14 +63,14 @@ public class RemoteFileMetaServiceImpl implements FileMetaService {
             GrantedAuthority next = iterator.next();
             permissions.add(next.getAuthority());
         }
-        
+
         // Is this File in at least one Authorised Dataset?
         ResponseEntity<File[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", File[].class, file_id);
         File[] body = forEntity.getBody();
-        if (body!=null && bodyDataset!=null) {
-            for (FileDataset f:bodyDataset) {
+        if (body != null && bodyDataset != null) {
+            for (FileDataset f : bodyDataset) {
                 String dataset_id = f.getDatasetId();
-                if (permissions.contains(dataset_id) && body.length>=1) {
+                if (permissions.contains(dataset_id) && body.length >= 1) {
                     File ff = body[0];
                     ff.setDatasetId(dataset_id);
                     //ff.setFileName(ff.getFileId()); // Hiding Filename from Outside
@@ -77,17 +78,17 @@ public class RemoteFileMetaServiceImpl implements FileMetaService {
                 }
             }
         }
-        
+
         return (new File());
     }
-    
+
     @Override
     //@HystrixCommand
-    @Cacheable(cacheNames="fileDatasetFile")
+    @Cacheable(cacheNames = "fileDatasetFile")
     public Iterable<File> getDatasetFiles(String dataset_id) {
         File[] response = restTemplate.getForObject(SERVICE_URL + "/datasets/{dataset_id}/files", File[].class, dataset_id);
         //if (response!=null) for (int i=0; i<response.length; i++) {response[i].setFileName(response[i].getFileId());}
         return Arrays.asList(response);
     }
-    
+
 }

@@ -16,6 +16,7 @@
 package eu.elixir.ega.ebi.dataedge.service.internal;
 
 //import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
 import eu.elixir.ega.ebi.dataedge.domain.entity.Transfer;
 import eu.elixir.ega.ebi.dataedge.domain.repository.TransferRepository;
 import eu.elixir.ega.ebi.dataedge.service.SessionService;
@@ -23,12 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- *
  * @author asenf
  */
 @Service
 public class SessionServiceImpl implements SessionService {
-    
+
     @Autowired
     private TransferRepository transferRepository;
 
@@ -38,5 +38,5 @@ public class SessionServiceImpl implements SessionService {
         return transferRepository.findOne(session_uuid);
     }
 
-    
+
 }

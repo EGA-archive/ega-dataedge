@@ -15,19 +15,18 @@
  */
 package eu.elixir.ega.ebi.dataedge.config;
 
-import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.BinaryMessage;
+import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 /**
- *
  * @author asenf
  */
 public class MyHandler extends BinaryWebSocketHandler {
-    
-//    @Override
+
+    //    @Override
     public void handleTextMessage(WebSocketSession session, BinaryMessage message) {
         // ...
-    }    
+    }
 
 }

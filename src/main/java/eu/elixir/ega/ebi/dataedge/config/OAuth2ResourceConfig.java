@@ -15,11 +15,6 @@
  */
 package eu.elixir.ega.ebi.dataedge.config;
 
-import java.io.IOException;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -37,8 +32,13 @@ import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 /**
- *
  * @author asenf
  */
 @Order(1)
@@ -47,102 +47,105 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @EnableResourceServer
 public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
 
-	private TokenExtractor tokenExtractor = new BearerTokenExtractor();
+    private TokenExtractor tokenExtractor = new BearerTokenExtractor();
 
-	@Override
-	public void configure(HttpSecurity http) throws Exception {
-		http.addFilterAfter(new OncePerRequestFilter() {
-			@Override
-			protected void doFilterInternal(HttpServletRequest request,
-					HttpServletResponse response, FilterChain filterChain)
-					throws ServletException, IOException {
-				// We don't want to allow access to a resource with no token so clear
-				// the security context in case it is actually an OAuth2Authentication
-				if (tokenExtractor.extract(request) == null) {
-					SecurityContextHolder.clearContext();
-				}                                
-                                filterChain.doFilter(request, response);
-			}
-		}, AbstractPreAuthenticatedProcessingFilter.class);
-		http
-                    .requestMatchers()
-                        .antMatchers("/files/**")
-                        .antMatchers("/metadata/**")
-                        .antMatchers("/tickets/**")
-                        .antMatchers("/demo/**")
-                        .antMatchers("/download/file/**")
-                        .antMatchers("/stats/testme").and()
-                        .authorizeRequests().anyRequest().authenticated()
-                        .and()
-                        .csrf().disable();
-	}
-
-        // This is a bit of a Hack! MitreID doesn't return 'user_name' but 'user_id', The
-        // customized User Authentication Converter simply changes the field name for extraction
-        @Bean
-	public AccessTokenConverter accessTokenConverter() {
-                //DefaultAccessTokenConverter myAccessTokenConverter = new DefaultAccessTokenConverter();
-                MyAccessTokenConverter myAccessTokenConverter = new MyAccessTokenConverter();
-                myAccessTokenConverter.setUserTokenConverter(new MyUserAuthenticationConverter());
-                return myAccessTokenConverter;
-		//return new DefaultAccessTokenConverter();
-	}
-/*	
-        @Primary
-	@Bean
-	public RemoteTokenServices remoteTokenServices(final @Value("${auth.server.url}") String checkTokenUrl,
-			final @Value("${auth.server.clientId}") String clientId,
-			final @Value("${auth.server.clientsecret}") String clientSecret) {
-		//final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
-		final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
-		remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-		remoteTokenServices.setClientId(clientId);
-		remoteTokenServices.setClientSecret(clientSecret);
-		remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-		return remoteTokenServices;
-	}
-        
-	@Bean
-	public RemoteTokenServices remoteZuulTokenServices(final @Value("${auth.zuul.server.url}") String checkTokenUrl,
-			final @Value("${auth.zuul.server.clientId}") String clientId,
-			final @Value("${auth.zuul.server.clientsecret}") String clientSecret) {
-		//final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
-		final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
-		remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-		remoteTokenServices.setClientId(clientId);
-		remoteTokenServices.setClientSecret(clientSecret);
-		//remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-		return remoteTokenServices;
-	}
-*/
-        @Primary
-	@Bean
-	public RemoteTokenServices remoteTokenServices(HttpServletRequest request, 
-	//public RemoteTokenServices combinedTokenServices(HttpServletRequest request, 
-                                final @Value("${auth.server.url}") String checkTokenUrl,
-                                final @Value("${auth.server.clientId}") String clientId,
-                                final @Value("${auth.server.clientsecret}") String clientSecret,
-                                final @Value("${auth.zuul.server.url}") String zuulCheckTokenUrl,
-                                final @Value("${auth.zuul.server.clientId}") String zuulClientId,
-                                final @Value("${auth.zuul.server.clientsecret}") String zuulClientSecret) {
-		final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
-                
-                String header = null;
-                try {
-                    header = request.getHeader("X-Permissions");
-                } catch (Throwable t) {System.out.println("Error " + t.getMessage());}
-                
-                if (header!=null && header.length()>0) {
-                    remoteTokenServices.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
-                    remoteTokenServices.setClientId(zuulClientId);
-                    remoteTokenServices.setClientSecret(zuulClientSecret);                    
-                } else {
-                    remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-                    remoteTokenServices.setClientId(clientId);
-                    remoteTokenServices.setClientSecret(clientSecret);
-                    remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
+    @Override
+    public void configure(HttpSecurity http) throws Exception {
+        http.addFilterAfter(new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request,
+                                            HttpServletResponse response, FilterChain filterChain)
+                    throws ServletException, IOException {
+                // We don't want to allow access to a resource with no token so clear
+                // the security context in case it is actually an OAuth2Authentication
+                if (tokenExtractor.extract(request) == null) {
+                    SecurityContextHolder.clearContext();
                 }
-                
-		return remoteTokenServices;
-	}
+                filterChain.doFilter(request, response);
+            }
+        }, AbstractPreAuthenticatedProcessingFilter.class);
+        http
+                .requestMatchers()
+                .antMatchers("/files/**")
+                .antMatchers("/metadata/**")
+                .antMatchers("/tickets/**")
+                .antMatchers("/demo/**")
+                .antMatchers("/download/file/**")
+                .antMatchers("/stats/testme").and()
+                .authorizeRequests().anyRequest().authenticated()
+                .and()
+                .csrf().disable();
+    }
+
+    // This is a bit of a Hack! MitreID doesn't return 'user_name' but 'user_id', The
+    // customized User Authentication Converter simply changes the field name for extraction
+    @Bean
+    public AccessTokenConverter accessTokenConverter() {
+        //DefaultAccessTokenConverter myAccessTokenConverter = new DefaultAccessTokenConverter();
+        MyAccessTokenConverter myAccessTokenConverter = new MyAccessTokenConverter();
+        myAccessTokenConverter.setUserTokenConverter(new MyUserAuthenticationConverter());
+        return myAccessTokenConverter;
+        //return new DefaultAccessTokenConverter();
+    }
+
+    /*
+            @Primary
+        @Bean
+        public RemoteTokenServices remoteTokenServices(final @Value("${auth.server.url}") String checkTokenUrl,
+                final @Value("${auth.server.clientId}") String clientId,
+                final @Value("${auth.server.clientsecret}") String clientSecret) {
+            //final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
+            final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
+            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
+            remoteTokenServices.setClientId(clientId);
+            remoteTokenServices.setClientSecret(clientSecret);
+            remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
+            return remoteTokenServices;
+        }
+
+        @Bean
+        public RemoteTokenServices remoteZuulTokenServices(final @Value("${auth.zuul.server.url}") String checkTokenUrl,
+                final @Value("${auth.zuul.server.clientId}") String clientId,
+                final @Value("${auth.zuul.server.clientsecret}") String clientSecret) {
+            //final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
+            final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
+            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
+            remoteTokenServices.setClientId(clientId);
+            remoteTokenServices.setClientSecret(clientSecret);
+            //remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
+            return remoteTokenServices;
+        }
+    */
+    @Primary
+    @Bean
+    public RemoteTokenServices remoteTokenServices(HttpServletRequest request,
+                                                   //public RemoteTokenServices combinedTokenServices(HttpServletRequest request,
+                                                   final @Value("${auth.server.url}") String checkTokenUrl,
+                                                   final @Value("${auth.server.clientId}") String clientId,
+                                                   final @Value("${auth.server.clientsecret}") String clientSecret,
+                                                   final @Value("${auth.zuul.server.url}") String zuulCheckTokenUrl,
+                                                   final @Value("${auth.zuul.server.clientId}") String zuulClientId,
+                                                   final @Value("${auth.zuul.server.clientsecret}") String zuulClientSecret) {
+        final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
+
+        String header = null;
+        try {
+            header = request.getHeader("X-Permissions");
+        } catch (Throwable t) {
+            System.out.println("Error " + t.getMessage());
+        }
+
+        if (header != null && header.length() > 0) {
+            remoteTokenServices.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
+            remoteTokenServices.setClientId(zuulClientId);
+            remoteTokenServices.setClientSecret(zuulClientSecret);
+        } else {
+            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
+            remoteTokenServices.setClientId(clientId);
+            remoteTokenServices.setClientSecret(clientSecret);
+            remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
+        }
+
+        return remoteTokenServices;
+    }
 }

@@ -15,19 +15,19 @@
  */
 package eu.elixir.ega.ebi.dataedge.service;
 
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+
 /**
- *
  * @author asenf
  */
 public interface FileService {
-    
-    public void getFile(Authentication auth, 
+
+    public void getFile(Authentication auth,
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
@@ -35,24 +35,24 @@ public interface FileService {
                         long endCoordinate,
                         HttpServletRequest request,
                         HttpServletResponse response);
-    
-    public void getFileHead(Authentication auth, 
-                        String file_id,
-                        HttpServletRequest request,
-                        HttpServletResponse response);
-    
-    public Object getFileHeader(Authentication auth, 
+
+    public void getFileHead(Authentication auth,
+                            String file_id,
+                            HttpServletRequest request,
+                            HttpServletResponse response);
+
+    public Object getFileHeader(Authentication auth,
                                 String file_id,
                                 String destinationFormat,
                                 String destinationKey);
-    
-    public void getById(Authentication auth, 
+
+    public void getById(Authentication auth,
                         String file_id,
                         String accession,
                         String format,
                         String reference,
                         long start,
-                        long end, 
+                        long end,
                         List<String> fields,
                         List<String> tags,
                         List<String> notags,
@@ -62,13 +62,13 @@ public interface FileService {
                         HttpServletRequest request,
                         HttpServletResponse response);
 
-    public void getVCFById(Authentication auth, 
+    public void getVCFById(Authentication auth,
                            String file_id,
                            String accession,
                            String format,
                            String reference,
                            long start,
-                           long end, 
+                           long end,
                            List<String> fields,
                            List<String> tags,
                            List<String> notags,
@@ -77,10 +77,10 @@ public interface FileService {
                            String destinationKey,
                            HttpServletRequest request,
                            HttpServletResponse response);
-    
-    public ResponseEntity getHeadById(Authentication auth, 
-                            String file_id,
-                            String accession,
-                            HttpServletRequest request,
-                            HttpServletResponse response);
+
+    public ResponseEntity getHeadById(Authentication auth,
+                                      String file_id,
+                                      String accession,
+                                      HttpServletRequest request,
+                                      HttpServletResponse response);
 }

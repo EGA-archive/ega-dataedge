@@ -19,41 +19,38 @@ package eu.elixir.ega.ebi.dataedge.rest;
 import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
 import eu.elixir.ega.ebi.dataedge.dto.File;
 import eu.elixir.ega.ebi.dataedge.service.FileMetaService;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 /**
- *
  * @author asenf
  */
 @RestController
 @EnableDiscoveryClient
 @RequestMapping("/metadata")
 public class MetadataController {
-    
+
     @Autowired
     private FileMetaService fileService;
-    
+
     @RequestMapping(value = "/datasets", method = GET)
-    public @ResponseBody Iterable<String> list(HttpServletRequest request) {
+    public @ResponseBody
+    Iterable<String> list(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Map<String, String[]> parameters = request.getParameterMap();
-                
+
         // EGA AAI: Permissions Provided by EGA AAI
         ArrayList<String> result = new ArrayList<>();
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
@@ -70,25 +67,27 @@ public class MetadataController {
                 if (permissions != null && permissions.size() > 0) {
                     //StringTokenizer t = new StringTokenizer(permissions, ",");
                     //while (t!=null && t.hasMoreTokens()) {
-                    for (String ds:permissions) {
+                    for (String ds : permissions) {
                         //String ds = t.nextToken();
-                        if (ds!=null && ds.length() > 0) result.add(ds);
+                        if (ds != null && ds.length() > 0) result.add(ds);
                     }
                 }
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+            }
         }
         return result; // List of datasets authorized for this user
     }
-        
+
     @RequestMapping(value = "/datasets/{dataset_id}/files", method = GET)
-    public @ResponseBody Iterable<File> getDatasetFiles(@PathVariable String dataset_id, 
-                                                        HttpServletRequest request) {
+    public @ResponseBody
+    Iterable<File> getDatasetFiles(@PathVariable String dataset_id,
+                                   HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Map<String, String[]> parameters = request.getParameterMap();
 
         // Validate Dataset Access
         boolean permission = false;
-        
+
         // EGA AAI: Permissions Provided by EGA AAI
         Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
         if (authorities != null && authorities.size() > 0) {
@@ -107,7 +106,7 @@ public class MetadataController {
                 if (permissions != null && permissions.size() > 0) {
                     //StringTokenizer t = new StringTokenizer(permissions, ",");
                     //while (t!=null && t.hasMoreTokens()) {
-                    for (String ds:permissions) {
+                    for (String ds : permissions) {
                         //String ds = t.nextToken();
                         if (ds != null && dataset_id.equalsIgnoreCase(ds)) {
                             permission = true;
@@ -115,10 +114,11 @@ public class MetadataController {
                         }
                     }
                 }
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+            }
         }
-        
-        return permission?(fileService.getDatasetFiles(dataset_id)):(new ArrayList<>());
+
+        return permission ? (fileService.getDatasetFiles(dataset_id)) : (new ArrayList<>());
     }
 
     @RequestMapping(value = "/files/{file_id}", method = GET)
@@ -128,5 +128,5 @@ public class MetadataController {
         // I don't know the dataset ID yet - pass on auth object to implementation for access control
         return fileService.getFile(auth, file_id);
     }
-    
+
 }

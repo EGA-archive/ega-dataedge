@@ -19,13 +19,8 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.CloseableIterator;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,7 +28,7 @@ import java.util.concurrent.Executors;
  * Created by vadim on 17/05/2016.
  */
 public class Converter {
-    CRAMReferenceSource referenceSource = new ReferenceSource((Path)null);
+    CRAMReferenceSource referenceSource = new ReferenceSource((Path) null);
     ExecutorService es = Executors.newFixedThreadPool(10);
 
     public Converter(CRAMReferenceSource referenceSource) {
