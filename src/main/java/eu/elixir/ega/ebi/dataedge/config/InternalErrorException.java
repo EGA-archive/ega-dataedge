@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * @author asenf
  */
-@ResponseStatus(HttpStatus.UNAUTHORIZED)
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 public class InternalErrorException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
