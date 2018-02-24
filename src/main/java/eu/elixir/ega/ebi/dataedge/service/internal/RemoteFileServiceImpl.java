@@ -19,6 +19,8 @@ import com.google.common.io.ByteStreams;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import eu.elixir.ega.ebi.dataedge.config.*;
+import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableCachedResStream;
+import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableResStream;
 import eu.elixir.ega.ebi.dataedge.domain.entity.Transfer;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
@@ -27,9 +29,9 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.SamReaderFactory.Option;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.seekablestream.SeekableRESStream;
+//import htsjdk.samtools.seekablestream.SeekableRESStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.seekablestream.ebi.SeekableCachedResStream;
+//import htsjdk.samtools.seekablestream.ebi.SeekableCachedResStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -282,8 +284,8 @@ public class RemoteFileServiceImpl implements FileService {
             try {
                 resUrl = new URL(resUrl() + "/file/archive/" + reqFile.getFileId()); // Just specify file ID
 
-                SeekableStream cIn = new SeekableRESStream(resUrl, null, -1); // Deals with coordinates
-                //SeekableStream cIn = new EgaSeekableCachedResStream(resUrl); // Deals with coordinates
+                //SeekableStream cIn = new EgaSeekableResStream(resUrl, null, -1); // Deals with coordinates
+                SeekableStream cIn = new EgaSeekableCachedResStream(resUrl); // Deals with coordinates
 
                 // SamReader with input stream based on RES URL
                 SamReader reader =
@@ -350,13 +352,13 @@ public class RemoteFileServiceImpl implements FileService {
                 // BAM/CRAM File
                 URL resUrl = new URL(resUrl() + "file/archive/" + reqFile.getFileId()); // Just specify file ID
                 //SeekableStream cIn = (new EgaSeekableResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
-                SeekableStream cIn = (new SeekableCachedResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
+                SeekableStream cIn = (new EgaSeekableCachedResStream(resUrl, null, null, reqFile.getFileSize())).setExtension(extension); // Deals with coordinates
                 //bIn = new SeekableBufferedStream(cIn);
                 // BAI/CRAI File
                 FileIndexFile fileIndexFile = getFileIndexFile(reqFile.getFileId());
                 File reqIndexFile = getReqFile(fileIndexFile.getIndexFileId(), auth, null);
                 URL indexUrl = new URL(resUrl() + "file/archive/" + fileIndexFile.getIndexFileId()); // Just specify index ID
-                SeekableStream cIndexIn = (new SeekableCachedResStream(indexUrl, null, null, reqIndexFile.getFileSize()));
+                SeekableStream cIndexIn = (new EgaSeekableCachedResStream(indexUrl, null, null, reqIndexFile.getFileSize()));
                 //bIndexIn = new SeekableBufferedStream(cIndexIn);
 
                 inputResource = SamInputResource.of(cIn).index(cIndexIn);
