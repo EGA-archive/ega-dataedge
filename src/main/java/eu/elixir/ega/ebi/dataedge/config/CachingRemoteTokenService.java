@@ -26,30 +26,29 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 
 /**
- *
  * @author asenf
  */
 public class CachingRemoteTokenService extends RemoteTokenServices {
 
-        private static Log log = LogFactory.getLog(CachingRemoteTokenService.class);
+    private static Log log = LogFactory.getLog(CachingRemoteTokenService.class);
 
-        @Override
-        @Cacheable(cacheNames="tokens", key="#root.methodName + #accessToken")
-        public OAuth2Authentication loadAuthentication(String accessToken)
-                throws org.springframework.security.core.AuthenticationException,
-                       InvalidTokenException {
-            log.info("loadAuthentication: " + accessToken);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            log.debug("Entering CachingRemoteTokenService auth: " + auth);
-            return super.loadAuthentication(accessToken);
-        }
-
-        @Override
-        @Cacheable(cacheNames="tokens", key="#root.methodName + #accessToken")
-        public OAuth2AccessToken readAccessToken(String accessToken) {
-            log.info("readAccessToken: " + accessToken);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            log.debug("Entering CachingRemoteTokenService auth: " + auth);
-            return super.readAccessToken(accessToken);
-        }
+    @Override
+    @Cacheable(cacheNames = "tokens", key = "#root.methodName + #accessToken")
+    public OAuth2Authentication loadAuthentication(String accessToken)
+            throws org.springframework.security.core.AuthenticationException,
+            InvalidTokenException {
+        log.info("loadAuthentication: " + accessToken);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        log.debug("Entering CachingRemoteTokenService auth: " + auth);
+        return super.loadAuthentication(accessToken);
     }
+
+    @Override
+    @Cacheable(cacheNames = "tokens", key = "#root.methodName + #accessToken")
+    public OAuth2AccessToken readAccessToken(String accessToken) {
+        log.info("readAccessToken: " + accessToken);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        log.debug("Entering CachingRemoteTokenService auth: " + auth);
+        return super.readAccessToken(accessToken);
+    }
+}

@@ -15,39 +15,56 @@
  */
 package eu.elixir.ega.ebi.dataedge.rest;
 
-import java.lang.management.ManagementFactory;
-import java.util.List;
-import java.util.Set;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.RequestHeader;
+import java.lang.management.ManagementFactory;
+import java.util.List;
+import java.util.Set;
 
-import org.springframework.web.bind.annotation.RequestMapping;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import org.springframework.web.bind.annotation.RestController;
-
-import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- *
  * @author asenf
  */
 @RestController
 @RequestMapping("/stats")
 public class StatsController {
-    
+
+    // Obtain local CPU Load (used by EBI Load Balancer as Heartbeat)
+    private static double getProcessCpuLoad() throws Exception {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
+        AttributeList list = mbs.getAttributes(name, new String[]{"ProcessCpuLoad"});
+
+        if (list.isEmpty()) return Double.NaN;
+
+        Attribute att = (Attribute) list.get(0);
+        Double value = (Double) att.getValue();
+
+        if (value == -1.0) return Double.NaN;
+        return ((int) (value * 1000) / 10.0);
+    }
+
     @RequestMapping(value = "/load", method = GET)
     @ResponseBody
     public String get() {
-        
+
         String load = "NN";
-        try {load = String.valueOf(getProcessCpuLoad());
-        } catch (Exception ex) {load = "Error";}
-        
+        try {
+            load = String.valueOf(getProcessCpuLoad());
+        } catch (Exception ex) {
+            load = "Error";
+        }
+
         return load;
     }
 
@@ -57,40 +74,25 @@ public class StatsController {
     @RequestMapping(value = "/testme", method = GET)
     @ResponseBody
     public String testme(HttpServletRequest servletRequest, @RequestHeader HttpHeaders headers) {
-        
+
         String result = "Null";
 
         result = "Headers: ";
         Set<String> keySet = headers.keySet();
-        for (String k:keySet) {
+        for (String k : keySet) {
             result += k + " ";
         }
-            
+
         if (headers.containsKey("X-Permissions")) {
             result += "\nPermissions: ";
             List<String> get = headers.get("X-Permissions");
-            for (String g:get) {
+            for (String g : get) {
                 result += g + " ";
             }
         }
-        
+
         result += "\nOrigin: " + servletRequest.getRemoteAddr() + "\n";
-        
+
         return result;
-    }
-
-    // Obtain local CPU Load (used by EBI Load Balancer as Heartbeat)
-    private static double getProcessCpuLoad() throws Exception {
-        MBeanServer mbs    = ManagementFactory.getPlatformMBeanServer();
-        ObjectName name    = ObjectName.getInstance("java.lang:type=OperatingSystem");
-        AttributeList list = mbs.getAttributes(name, new String[]{ "ProcessCpuLoad" });
-
-        if (list.isEmpty())     return Double.NaN;
-
-        Attribute att = (Attribute)list.get(0);
-        Double value  = (Double)att.getValue();
-
-        if (value == -1.0)      return Double.NaN;
-        return ((int)(value * 1000) / 10.0);
     }
 }

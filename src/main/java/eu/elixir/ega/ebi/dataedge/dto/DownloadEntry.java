@@ -15,15 +15,15 @@
  */
 package eu.elixir.ega.ebi.dataedge.dto;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+import java.sql.Timestamp;
+
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -31,7 +31,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class DownloadEntry implements Serializable {
-    
+
     private Long downloadLogId;
     private String clientIp;
     private String server;
@@ -45,21 +45,21 @@ public class DownloadEntry implements Serializable {
     private Long endCoordinate;
     private Long bytes;
     private Timestamp created;
-    
+
     @Override
     public String toString() {
-            return "DownloadEntry [downloadLogId=" + downloadLogId + 
-                   ", clientIp=" + clientIp +
-                   ", server=" + server +
-                   ", email=" + email +
-                   ", fileId=" + fileId +
-                   ", downloadSpeed=" + downloadSpeed +
-                   ", downloadStatus=" + downloadStatus +
-                   ", downloadProtocol=" + downloadProtocol +
-                   ", encryptionType=" + encryptionType +
-                   ", startCoordinate=" + startCoordinate +
-                   ", endCoordinate=" + endCoordinate +
-                   ", bytes=" + bytes +
-                   ", created=" + created + "]";
-    }    
+        return "DownloadEntry [downloadLogId=" + downloadLogId +
+                ", clientIp=" + clientIp +
+                ", server=" + server +
+                ", email=" + email +
+                ", fileId=" + fileId +
+                ", downloadSpeed=" + downloadSpeed +
+                ", downloadStatus=" + downloadStatus +
+                ", downloadProtocol=" + downloadProtocol +
+                ", encryptionType=" + encryptionType +
+                ", startCoordinate=" + startCoordinate +
+                ", endCoordinate=" + endCoordinate +
+                ", bytes=" + bytes +
+                ", created=" + created + "]";
+    }
 }

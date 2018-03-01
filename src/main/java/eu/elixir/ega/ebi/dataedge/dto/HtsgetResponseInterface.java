@@ -16,9 +16,8 @@
 package eu.elixir.ega.ebi.dataedge.dto;
 
 /**
- *
  * @author asenf
  */
 public interface HtsgetResponseInterface {
-    
+
 }

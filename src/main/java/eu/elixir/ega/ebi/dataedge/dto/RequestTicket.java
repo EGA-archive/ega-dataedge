@@ -15,14 +15,14 @@
  */
 package eu.elixir.ega.ebi.dataedge.dto;
 
-import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Timestamp;
+
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -30,20 +30,20 @@ import lombok.Setter;
 @Setter
 @Getter
 public class RequestTicket {
-    
-        private String email;
-        private String downloadTicket;
-        private String clientIp;
-        private String fileId;
-        private String encryptionKey;
-        private String encryptionType;
-        private String ticketStatus;
-        private String label;
-        private Timestamp created;
-        private long startCoordinate;
-        private long endCoordinate;
-        
-        public String toString() {
-            return email+":"+downloadTicket+":"+clientIp+":"+fileId+":"+encryptionKey+":"+encryptionType+":"+ticketStatus+":"+label+":"+startCoordinate+":"+endCoordinate;
-        }
+
+    private String email;
+    private String downloadTicket;
+    private String clientIp;
+    private String fileId;
+    private String encryptionKey;
+    private String encryptionType;
+    private String ticketStatus;
+    private String label;
+    private Timestamp created;
+    private long startCoordinate;
+    private long endCoordinate;
+
+    public String toString() {
+        return email + ":" + downloadTicket + ":" + clientIp + ":" + fileId + ":" + encryptionKey + ":" + encryptionType + ":" + ticketStatus + ":" + label + ":" + startCoordinate + ":" + endCoordinate;
+    }
 }

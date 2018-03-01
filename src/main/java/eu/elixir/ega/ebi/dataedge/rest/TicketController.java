@@ -15,22 +15,23 @@
  */
 package eu.elixir.ega.ebi.dataedge.rest;
 
+import eu.elixir.ega.ebi.dataedge.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import eu.elixir.ega.ebi.dataedge.service.TicketService;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 /**
- *
  * @author asenf
  */
 @RestController
@@ -40,7 +41,7 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
-    
+
     @RequestMapping(value = "/files/{file_id}", method = GET)
     public Object getTicket(@PathVariable String file_id,
                             @RequestParam(name = "format", required = false, defaultValue = "BAM") String format,
@@ -56,20 +57,20 @@ public class TicketController {
                             HttpServletResponse response) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        return ticketService.getTicket(auth, 
-                                       file_id,
-                                       format,
-                                       referenceIndex,
-                                       referenceName,
-                                       referenceMD5,
-                                       start,
-                                       end,
-                                       fields,
-                                       tags,
-                                       notags,
-                                       request,
-                                       response);
-    }    
+        return ticketService.getTicket(auth,
+                file_id,
+                format,
+                referenceIndex,
+                referenceName,
+                referenceMD5,
+                start,
+                end,
+                fields,
+                tags,
+                notags,
+                request,
+                response);
+    }
 
     @RequestMapping(value = "/variants/{file_id}", method = GET)
     public Object getVariantTicket(@PathVariable String file_id,
@@ -86,19 +87,19 @@ public class TicketController {
                                    HttpServletResponse response) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        return ticketService.getVariantTicket(auth, 
-                                              file_id,
-                                              format,
-                                              referenceIndex,
-                                              referenceName,
-                                              referenceMD5,
-                                              start,
-                                              end,
-                                              fields,
-                                              tags,
-                                              notags,
-                                              request,
-                                              response);
+        return ticketService.getVariantTicket(auth,
+                file_id,
+                format,
+                referenceIndex,
+                referenceName,
+                referenceMD5,
+                start,
+                end,
+                fields,
+                tags,
+                notags,
+                request,
+                response);
     }    
 
 /*    

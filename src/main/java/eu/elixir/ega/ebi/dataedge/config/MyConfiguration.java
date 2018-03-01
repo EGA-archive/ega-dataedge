@@ -17,11 +17,8 @@ package eu.elixir.ega.ebi.dataedge.config;
 
 import com.google.common.cache.CacheBuilder;
 import eu.elixir.ega.ebi.dataedge.dto.MyExternalConfig;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.guava.GuavaCache;
 import org.springframework.cache.support.SimpleCacheManager;
@@ -32,7 +29,6 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 import springfox.documentation.builders.PathSelectors;
@@ -40,25 +36,29 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 /**
- *
  * @author asenf
  */
 @Configuration
 @EnableCaching
 @EnableRetry
-public class MyConfiguration { 
-    @Value("${ega.ega.external.url}") String externalUrl;
-    @Value("${ega.ega.cram.fasta}") String cramFastaReference;
+public class MyConfiguration {
+    @Value("${ega.ega.external.url}")
+    String externalUrl;
+    @Value("${ega.ega.cram.fasta}")
+    String cramFastaReference;
 
     // Ribbon Load Balanced Rest Template for communication with other Microservices
-    
+
     @Bean
     @LoadBalanced
     RestTemplate restTemplate() {
         return new RestTemplate();
     }
-    
+
     @Bean
     @LoadBalanced
     AsyncRestTemplate asyncRestTemplate() {
@@ -69,18 +69,18 @@ public class MyConfiguration {
     @LoadBalanced
     public RetryTemplate retryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
-         
+
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
         fixedBackOffPolicy.setBackOffPeriod(2000l);
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
- 
+
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
         retryPolicy.setMaxAttempts(4);
         retryTemplate.setRetryPolicy(retryPolicy);
-         
+
         return retryTemplate;
     }
-    
+
     @Bean
     public Docket swaggerSettings() {
         return new Docket(DocumentationType.SWAGGER_2)
@@ -89,7 +89,7 @@ public class MyConfiguration {
                 .paths(PathSelectors.any())
                 .build()
                 .pathMapping("/");
-    }    
+    }
 
     //@Bean
     //public CacheManager cacheManager() {
@@ -132,12 +132,12 @@ public class MyConfiguration {
         GuavaCache fileDatasetFile = new GuavaCache("fileDatasetFile", CacheBuilder.newBuilder()
                 .expireAfterWrite(24, TimeUnit.HOURS)
                 .build());
-        
+
         simpleCacheManager.setCaches(Arrays.asList(tokens, reqFile, index, fileHead,
-                    headerFile, fileSize, fileFile, fileDatasetFile));
+                headerFile, fileSize, fileFile, fileDatasetFile));
         return simpleCacheManager;
     }
-    
+
     @Bean
     public MyExternalConfig MyArchiveConfig() {
         return new MyExternalConfig(externalUrl, cramFastaReference);

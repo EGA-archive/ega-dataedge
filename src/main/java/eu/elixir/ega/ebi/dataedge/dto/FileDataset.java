@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -29,6 +28,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public class FileDataset {
-        private String fileId;
-        private String datasetId;
+    private String fileId;
+    private String datasetId;
 }

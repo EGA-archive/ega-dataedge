@@ -15,14 +15,14 @@
  */
 package eu.elixir.ega.ebi.dataedge.dto;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
- *
  * @author asenf
  */
 @NoArgsConstructor
@@ -30,7 +30,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class HttpResult {
-    
+
     private long bytes;
     private List<String> session;
     private String md5;
