@@ -16,11 +16,11 @@
 package eu.elixir.ega.ebi.dataedge.service.internal;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CountingOutputStream;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import eu.elixir.ega.ebi.dataedge.config.*;
 import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableCachedResStream;
-import eu.elixir.ega.ebi.dataedge.customstreams.EgaSeekableResStream;
 import eu.elixir.ega.ebi.dataedge.domain.entity.Transfer;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
@@ -97,10 +97,13 @@ public class RemoteFileServiceImpl implements FileService {
 
     //@Autowired
     //private TransferRepository transferRepository;
+
     @Autowired
     MyExternalConfig externalConfig;
+
     @Autowired
     private DownloaderLogService downloaderLogService;
+
     @Autowired
     private EurekaClient discoveryClient;
 
@@ -110,6 +113,7 @@ public class RemoteFileServiceImpl implements FileService {
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
+                        String destinationIV,
                         long startCoordinate,
                         long endCoordinate,
                         HttpServletRequest request,
@@ -135,10 +139,12 @@ public class RemoteFileServiceImpl implements FileService {
             response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
 
             // If byte range, set response 206
+            long fileLength = reqFile.getFileSize();
+            if (destinationFormat.equalsIgnoreCase("plain")) fileLength -= 16;
             if (startCoordinate > 0 || endCoordinate > 0) {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 response.addHeader("Content-Range", "bytes " + startCoordinate +
-                        "-" + (endCoordinate - 1) + "/" + reqFile.getFileSize());
+                        "-" + (endCoordinate - 1) + "/" + fileLength);
                 if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
                     response.setBufferSize((int) (endCoordinate - startCoordinate));
             }
@@ -197,7 +203,7 @@ public class RemoteFileServiceImpl implements FileService {
                 timeDelta = System.currentTimeMillis();
                 int cnt = 2;
                 do {
-                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
+                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, destinationIV, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
                 } while (xferResult.getBytes() <= 0 && cnt-- > 0);
                 timeDelta = System.currentTimeMillis() - timeDelta;
 
@@ -232,7 +238,7 @@ public class RemoteFileServiceImpl implements FileService {
                     long bytes = 0;
                     System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
                     DownloadEntry dle = getDownloadEntry(success, speed, file_id,
-                            "TODO ClientIp", user_email, destinationFormat,
+                            "TODO ClientIp", "direct", user_email, destinationFormat,
                             startCoordinate, endCoordinate, bytes);
                     downloaderLogService.logDownload(dle);
                 }
@@ -245,6 +251,7 @@ public class RemoteFileServiceImpl implements FileService {
     @Cacheable(cacheNames = "fileHead")
     public void getFileHead(Authentication auth,
                             String file_id,
+                            String destinationFormat,
                             HttpServletRequest request,
                             HttpServletResponse response) {
 
@@ -259,8 +266,8 @@ public class RemoteFileServiceImpl implements FileService {
             response = setHeaders(response, headerValue);
 
             // Content Length of response (if available)
-            response.setContentLengthLong(getContentLength(reqFile, "plain", 0, 0));
-            response.addHeader("X-Content-Length", String.valueOf(getContentLength(reqFile, "plain", 0, 0)));
+            response.setContentLengthLong(getContentLength(reqFile, destinationFormat, 0, 0));
+            response.addHeader("X-Content-Length", String.valueOf(getContentLength(reqFile, destinationFormat, 0, 0)));
         }
     }
 
@@ -330,6 +337,8 @@ public class RemoteFileServiceImpl implements FileService {
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
         }
+        CountingOutputStream cOut = null;
+        long timeDelta = System.currentTimeMillis();
 
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request);
@@ -399,7 +408,9 @@ public class RemoteFileServiceImpl implements FileService {
             OutputStream out = null;
             SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
             if (query != null) try {
-                out = response.getOutputStream();
+                cOut = new CountingOutputStream(response.getOutputStream());
+                out = cOut;
+                //out = response.getOutputStream();
                 if (format.equalsIgnoreCase("BAM")) {
                     try (SAMFileWriter writer = writerFactory.makeBAMWriter(fileHeader, true, out)) { // writes out header
                         Stream<SAMRecord> stream = query.stream();
@@ -424,11 +435,23 @@ public class RemoteFileServiceImpl implements FileService {
                 }
 
             } catch (Throwable t) { // Log Error!
-                EventEntry eev = getEventEntry(t, "TODO ClientIp", "Direct GA4GH Download", auth.getName());
+                EventEntry eev = getEventEntry(t, "TODO ClientIp", "GA4GH htsget Download BAM/CRAM", auth.getName());
                 downloaderLogService.logEvent(eev);
                 System.out.println("ERROR 4 " + t.toString());
                 throw new GeneralStreamingException(t.toString(), 6);
             } finally {
+                
+                timeDelta = System.currentTimeMillis() - timeDelta;
+                double speed = (cOut.getCount() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
+                long bytes = 0;
+                boolean success = cOut.getCount() > 0;
+                String user_email = auth.getName(); // For Logging
+                System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
+                DownloadEntry dle = getDownloadEntry(success, speed, file_id,
+                        "TODO ClientIp", "htsget", user_email, destinationFormat,
+                        start, end, bytes);
+                downloaderLogService.logDownload(dle);
+                                
                 if (out != null) try {
                     out.close();
                 } catch (IOException ex) {
@@ -466,6 +489,9 @@ public class RemoteFileServiceImpl implements FileService {
             file_id = accession;
         }
 
+        long timeDelta = System.currentTimeMillis();
+        CountingOutputStream cOut = null;
+        
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request);
         if (reqFile != null) {
@@ -521,7 +547,9 @@ public class RemoteFileServiceImpl implements FileService {
             // Open return output stream - instatiate a SamFileWriter
             OutputStream out;
             try {
-                out = response.getOutputStream();
+                cOut = new CountingOutputStream(response.getOutputStream());
+                out = cOut;
+                //out = response.getOutputStream();
 
                 VariantContextWriterBuilder builder = new VariantContextWriterBuilder().
                         setOutputVCFStream(out).
@@ -542,6 +570,19 @@ public class RemoteFileServiceImpl implements FileService {
                 writer.close();
             } catch (IOException ex) {
                 throw new InternalErrorException(ex.getMessage(), "20");
+            } finally {
+                
+                timeDelta = System.currentTimeMillis() - timeDelta;
+                double speed = (cOut.getCount() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
+                long bytes = 0;
+                boolean success = cOut.getCount() > 0;
+                String user_email = auth.getName(); // For Logging
+                System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
+                DownloadEntry dle = getDownloadEntry(success, speed, file_id,
+                        "TODO ClientIp", "htsget", user_email, destinationFormat,
+                        start, end, bytes);
+                downloaderLogService.logDownload(dle);
+                
             }
 
 
@@ -583,6 +624,7 @@ public class RemoteFileServiceImpl implements FileService {
     private URI getResUri(String fileStableIdPath,
                           String destFormat,
                           String destKey,
+                          String destIV,
                           Long startCoord,
                           Long endCoord) {
         destFormat = destFormat.equals("AES") ? "aes128" : destFormat; // default to 128-bit if not specified
@@ -613,6 +655,7 @@ public class RemoteFileServiceImpl implements FileService {
             builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("destinationFormat", destFormat)
                     .queryParam("destinationKey", destKey)
+                    .queryParam("destinationIV", destIV)
                     .queryParam("startCoordinate", startCoord)
                     .queryParam("endCoordinate", endCoord)
                     .queryParam("filePath", fileStableIdPath); // TEST!!
@@ -635,6 +678,7 @@ public class RemoteFileServiceImpl implements FileService {
     //@HystrixCommand
     private DownloadEntry getDownloadEntry(boolean success, double speed, String fileId,
                                            String clientIp,
+                                           String server,
                                            String email,
                                            String encryptionType,
                                            long startCoordinate,
@@ -648,7 +692,7 @@ public class RemoteFileServiceImpl implements FileService {
         dle.setClientIp(clientIp);
         dle.setEmail(email);
         dle.setDownloadProtocol("http");
-        dle.setServer("DATAEDGE");
+        dle.setServer(server);
         dle.setEncryptionType(encryptionType);
         dle.setStartCoordinate(startCoordinate);
         dle.setEndCoordinate(endCoordinate);

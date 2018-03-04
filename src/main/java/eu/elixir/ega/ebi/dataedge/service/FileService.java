@@ -31,6 +31,7 @@ public interface FileService {
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
+                        String destinationIV,
                         long startCoordinate,
                         long endCoordinate,
                         HttpServletRequest request,
@@ -38,6 +39,7 @@ public interface FileService {
 
     public void getFileHead(Authentication auth,
                             String file_id,
+                            String destinationFormat,
                             HttpServletRequest request,
                             HttpServletResponse response);
 

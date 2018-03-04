@@ -17,6 +17,8 @@ package eu.elixir.ega.ebi.dataedge.service.internal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClient;
 import eu.elixir.ega.ebi.dataedge.dto.DownloadEntry;
 import eu.elixir.ega.ebi.dataedge.dto.EventEntry;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
@@ -34,6 +36,8 @@ import org.springframework.web.client.AsyncRestTemplate;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import org.springframework.web.client.RestTemplate;
 
 //import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
@@ -50,6 +54,12 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
     @Autowired
     AsyncRestTemplate restTemplate;
 
+    @Autowired
+    RestTemplate syncRestTemplate;
+    
+    @Autowired
+    private EurekaClient discoveryClient;
+    
     @Override
     //@HystrixCommand
     public void logDownload(DownloadEntry downloadEntry) {
@@ -57,12 +67,16 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        InstanceInfo instance = discoveryClient.getNextServerFromEureka("DOWNLOADER", false);
+        String logUrl = instance.getHomePageUrl();
+    
         // Jackson ObjectMapper to convert requestBody to JSON
         String json = null;
         URI url = null;
         try {
             json = new ObjectMapper().writeValueAsString(downloadEntry);
-            url = new URI(SERVICE_URL + "/log/download/");
+            //url = new URI(SERVICE_URL + "/log/download/");
+            url = new URI(logUrl + "/log/download/");
         } catch (JsonProcessingException | URISyntaxException ex) {
         }
 
@@ -81,11 +95,13 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
 
                     @Override
                     public void onFailure(Throwable t) {
+                        System.out.println("LOG FAILURE: " + t.toString());
                     }
                 });
 
         // Old Synchronous Call
-        //restTemplate.postForObject(SERVICE_URL + "/log/download/", downloadEntry, Void.class);
+        //syncRestTemplate.postForObject(SERVICE_URL + "/log/download/", downloadEntry, Void.class);
+        //restTemplate.ppostForEntity(SERVICE_URL + "/log/download/", downloadEntry, Void.class);
 
     }
 
@@ -96,12 +112,16 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        InstanceInfo instance = discoveryClient.getNextServerFromEureka("DOWNLOADER", false);
+        String logUrl = instance.getHomePageUrl();
+    
         // Jackson ObjectMapper to convert requestBody to JSON
         String json = null;
         URI url = null;
         try {
             json = new ObjectMapper().writeValueAsString(eventEntry);
-            url = new URI(SERVICE_URL + "/log/download/");
+            url = new URI(logUrl + "/log/download/");
+            //url = new URI(SERVICE_URL + "/log/download/");
         } catch (JsonProcessingException | URISyntaxException ex) {
         }
 

@@ -46,6 +46,7 @@ public class FileController {
     public void getFile(@PathVariable String file_id,
                         @RequestParam(value = "destinationFormat", required = false, defaultValue = "aes128") String destinationFormat,
                         @RequestParam(value = "destinationKey", required = false, defaultValue = "") String destinationKey,
+                        @RequestParam(value = "destinationIV", required = false, defaultValue = "RANDOM") String destinationIV,
                         @RequestParam(value = "startCoordinate", required = false, defaultValue = "0") long startCoordinate,
                         @RequestParam(value = "endCoordinate", required = false, defaultValue = "0") long endCoordinate,
                         @RequestHeader(value = "Range", required = false, defaultValue = "") String range,
@@ -63,6 +64,7 @@ public class FileController {
                 file_id,
                 destinationFormat,
                 destinationKey,
+                destinationIV,
                 startCoordinate,
                 endCoordinate,
                 request,
@@ -71,6 +73,7 @@ public class FileController {
 
     @RequestMapping(value = "/{file_id}", method = HEAD)
     public void getFileHead(@PathVariable String file_id,
+                            @RequestParam(value = "destinationFormat", required = false, defaultValue = "aes128") String destinationFormat,
                             HttpServletRequest request,
                             HttpServletResponse response) {
 
@@ -78,6 +81,7 @@ public class FileController {
 
         fileService.getFileHead(auth,
                 file_id,
+                destinationFormat,
                 request,
                 response);
     }
