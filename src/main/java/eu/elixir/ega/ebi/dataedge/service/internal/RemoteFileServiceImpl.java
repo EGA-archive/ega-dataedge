@@ -124,6 +124,12 @@ public class RemoteFileServiceImpl implements FileService {
         if (reqFile.getFileSize() > 0 && endCoordinate > reqFile.getFileSize())
             endCoordinate = reqFile.getFileSize();
 
+        // CLient IP
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");  
+           if (ipAddress == null) {  
+             ipAddress = request.getRemoteAddr();  
+        }
+           
         // Variables needed for responses at the end of the function
         long timeDelta = 0;
         HttpResult xferResult = null;
@@ -209,7 +215,7 @@ public class RemoteFileServiceImpl implements FileService {
 
             } catch (Throwable t) { // Log Error!
                 System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
-                EventEntry eev = getEventEntry(t, "TODO ClientIp", "Direct Download", user_email);
+                EventEntry eev = getEventEntry(t, ipAddress, "file", user_email);
                 downloaderLogService.logEvent(eev);
 
                 throw new GeneralStreamingException(t.toString(), 4);
@@ -235,10 +241,10 @@ public class RemoteFileServiceImpl implements FileService {
                     // Compare - Sent MD5 equals Received MD5? - Log Download in DB
                     boolean success = outHashtext.equals(inHashtext);
                     double speed = (xferResult.getBytes() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
-                    long bytes = 0;
+                    long bytes = xferResult.getBytes();
                     System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
                     DownloadEntry dle = getDownloadEntry(success, speed, file_id,
-                            "TODO ClientIp", "direct", user_email, destinationFormat,
+                            ipAddress, "file", user_email, destinationFormat,
                             startCoordinate, endCoordinate, bytes);
                     downloaderLogService.logDownload(dle);
                 }
@@ -333,6 +339,12 @@ public class RemoteFileServiceImpl implements FileService {
         // Adding a content header in the response: binary data
         response.addHeader("Content-Type", MediaType.valueOf("application/octet-stream").toString());
 
+        // CLient IP
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");  
+           if (ipAddress == null) {  
+             ipAddress = request.getRemoteAddr();  
+        }
+        
         String file_id = "";
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
@@ -435,7 +447,7 @@ public class RemoteFileServiceImpl implements FileService {
                 }
 
             } catch (Throwable t) { // Log Error!
-                EventEntry eev = getEventEntry(t, "TODO ClientIp", "GA4GH htsget Download BAM/CRAM", auth.getName());
+                EventEntry eev = getEventEntry(t, ipAddress, "GA4GH htsget Download BAM/CRAM", auth.getName());
                 downloaderLogService.logEvent(eev);
                 System.out.println("ERROR 4 " + t.toString());
                 throw new GeneralStreamingException(t.toString(), 6);
@@ -443,12 +455,12 @@ public class RemoteFileServiceImpl implements FileService {
                 
                 timeDelta = System.currentTimeMillis() - timeDelta;
                 double speed = (cOut.getCount() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
-                long bytes = 0;
+                long bytes = cOut.getCount();
                 boolean success = cOut.getCount() > 0;
                 String user_email = auth.getName(); // For Logging
                 System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
                 DownloadEntry dle = getDownloadEntry(success, speed, file_id,
-                        "TODO ClientIp", "htsget", user_email, destinationFormat,
+                        ipAddress, "htsget bam/cram", user_email, destinationFormat,
                         start, end, bytes);
                 downloaderLogService.logDownload(dle);
                                 
@@ -484,6 +496,12 @@ public class RemoteFileServiceImpl implements FileService {
         // Adding a content header in the response: binary data
         response.addHeader("Content-Type", MediaType.valueOf("application/octet-stream").toString());
 
+        // CLient IP
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");  
+           if (ipAddress == null) {  
+             ipAddress = request.getRemoteAddr();  
+        }
+        
         String file_id = "";
         if (idType.equalsIgnoreCase("file")) { // Currently only support File IDs
             file_id = accession;
@@ -574,12 +592,12 @@ public class RemoteFileServiceImpl implements FileService {
                 
                 timeDelta = System.currentTimeMillis() - timeDelta;
                 double speed = (cOut.getCount() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
-                long bytes = 0;
+                long bytes = cOut.getCount();
                 boolean success = cOut.getCount() > 0;
                 String user_email = auth.getName(); // For Logging
                 System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
                 DownloadEntry dle = getDownloadEntry(success, speed, file_id,
-                        "TODO ClientIp", "htsget", user_email, destinationFormat,
+                        ipAddress, "htsget vcf/bcf", user_email, destinationFormat,
                         start, end, bytes);
                 downloaderLogService.logDownload(dle);
                 
