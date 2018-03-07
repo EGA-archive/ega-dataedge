@@ -113,7 +113,7 @@ public class FileController {
                         @RequestParam(value = "tags", required = false) List<String> tags,
                         @RequestParam(value = "notags", required = false) List<String> notags,
                         @RequestParam(value = "header", required = false, defaultValue = "true") Boolean header,
-                        @RequestParam(value = "destinationFormat", required = false, defaultValue = "aes128") String destinationFormat,
+                        @RequestParam(value = "destinationFormat", required = false, defaultValue = "plain") String destinationFormat,
                         @RequestParam(value = "destinationKey", required = false, defaultValue = "") String destinationKey,
                         HttpServletRequest request,
                         HttpServletResponse response) {
@@ -150,7 +150,7 @@ public class FileController {
                                @RequestParam(value = "tags", required = false) List<String> tags,
                                @RequestParam(value = "notags", required = false) List<String> notags,
                                @RequestParam(value = "header", required = false, defaultValue = "true") Boolean header,
-                               @RequestParam(value = "destinationFormat", required = false, defaultValue = "aes128") String destinationFormat,
+                               @RequestParam(value = "destinationFormat", required = false, defaultValue = "plain") String destinationFormat,
                                @RequestParam(value = "destinationKey", required = false, defaultValue = "") String destinationKey,
                                HttpServletRequest request,
                                HttpServletResponse response) {
