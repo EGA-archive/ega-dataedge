@@ -115,15 +115,6 @@
             <artifactId>ega-htsjdk</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-
-        <!--
-                <dependency>
-                        <groupId>eu.elixir.ega.ebi</groupId>
-                        <artifactId>ega-htsjdk</artifactId>
-                        <version>1.0-SNAPSHOT</version>
-                        <type>jar</type>
-                </dependency>        
-        -->        
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger-ui</artifactId>
