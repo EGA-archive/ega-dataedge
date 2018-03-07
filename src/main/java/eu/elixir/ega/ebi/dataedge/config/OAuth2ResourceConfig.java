@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -89,7 +90,7 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
     }
 
     /*
-            @Primary
+        @Primary
         @Bean
         public RemoteTokenServices remoteTokenServices(final @Value("${auth.server.url}") String checkTokenUrl,
                 final @Value("${auth.server.clientId}") String clientId,
@@ -116,8 +117,10 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
             return remoteTokenServices;
         }
     */
-    @Primary
+
     @Bean
+	  @Profile("enable-aai")
+	  @Primary  
     public RemoteTokenServices remoteTokenServices(HttpServletRequest request,
                                                    //public RemoteTokenServices combinedTokenServices(HttpServletRequest request,
                                                    final @Value("${auth.server.url}") String checkTokenUrl,
