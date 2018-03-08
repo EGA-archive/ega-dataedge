@@ -121,21 +121,33 @@ public class RemoteFileServiceImpl implements FileService {
 
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request); // request added for ELIXIR
+        if (reqFile==null) {
+            try { Thread.sleep(2500); } catch (InterruptedException ex) { ; }
+            reqFile = getReqFile(file_id, auth, request);
+        }
         if (reqFile.getFileSize() > 0 && endCoordinate > reqFile.getFileSize())
             endCoordinate = reqFile.getFileSize();
 
         // CLient IP
         String ipAddress = request.getHeader("X-FORWARDED-FOR");  
-           if (ipAddress == null) {  
-             ipAddress = request.getRemoteAddr();  
+        if (ipAddress == null) {  
+            ipAddress = request.getRemoteAddr();  
         }
-           
+        
+        String user_email = auth.getName(); // For Logging
+        
         // Variables needed for responses at the end of the function
         long timeDelta = 0;
         HttpResult xferResult = null;
         MessageDigest outDigest = null;
 
         if (reqFile != null) {
+            // Log request in Event
+        //    EventEntry eev_received = getEventEntry(file_id + ":" + destinationFormat + ":" + startCoordinate + ":" + endCoordinate, 
+        //            ipAddress, "http_request", user_email);
+        //    eev_received.setEventType("request_log");
+        //    downloaderLogService.logEvent(eev_received);
+            
             // Build Header - Specify UUID (Allow later stats query regarding this transfer)
             UUID dlIdentifier = UUID.randomUUID();
             String headerValue = dlIdentifier.toString();
@@ -154,8 +166,6 @@ public class RemoteFileServiceImpl implements FileService {
                 if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
                     response.setBufferSize((int) (endCoordinate - startCoordinate));
             }
-
-            String user_email = auth.getName(); // For Logging
 
             try {
                 // Get Send Stream - http Response, wrap in Digest Stream
@@ -191,7 +201,8 @@ public class RemoteFileServiceImpl implements FileService {
                     } catch (Throwable t) {
                         System.out.println("RemoteFileServiceImpl Error 1: " + t.toString());
                         inHashtext = t.getMessage();
-                        throw new GeneralStreamingException(t.toString(), 7);
+                        String errorMessage = t.toString();
+                        throw new GeneralStreamingException(errorMessage, 7);
                     }
 
                     // return number of bytes copied, RES session header, and MD5 of RES input stream
@@ -215,7 +226,8 @@ public class RemoteFileServiceImpl implements FileService {
 
             } catch (Throwable t) { // Log Error!
                 System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
-                EventEntry eev = getEventEntry(t, ipAddress, "file", user_email);
+                String errorMessage = file_id + ":" + destinationFormat + ":" + startCoordinate + ":" + endCoordinate + ":" + t.toString();
+                EventEntry eev = getEventEntry(errorMessage, ipAddress, "file", user_email);
                 downloaderLogService.logEvent(eev);
 
                 throw new GeneralStreamingException(t.toString(), 4);
@@ -447,7 +459,7 @@ public class RemoteFileServiceImpl implements FileService {
                 }
 
             } catch (Throwable t) { // Log Error!
-                EventEntry eev = getEventEntry(t, ipAddress, "GA4GH htsget Download BAM/CRAM", auth.getName());
+                EventEntry eev = getEventEntry(t.toString(), ipAddress, "GA4GH htsget Download BAM/CRAM", auth.getName());
                 downloaderLogService.logEvent(eev);
                 System.out.println("ERROR 4 " + t.toString());
                 throw new GeneralStreamingException(t.toString(), 6);
@@ -721,13 +733,13 @@ public class RemoteFileServiceImpl implements FileService {
     }
 
     //@HystrixCommand
-    private EventEntry getEventEntry(Throwable t, String clientIp,
+    private EventEntry getEventEntry(String t, String clientIp,
                                      String ticket,
                                      String email) {
         EventEntry eev = new EventEntry();
         eev.setEventId("0");
         eev.setClientIp(clientIp);
-        eev.setEvent(t.toString());
+        eev.setEvent(t);
         eev.setDownloadTicket(ticket);
         eev.setEventType("Error");
         eev.setEmail(email);
@@ -760,6 +772,17 @@ public class RemoteFileServiceImpl implements FileService {
                     }
                 }
             } catch (Exception ex) {
+                String ipAddress = request.getHeader("X-FORWARDED-FOR");  
+                   if (ipAddress == null) {  
+                     ipAddress = request.getRemoteAddr();  
+                }
+                String user_email = auth.getName(); // For Logging
+                
+                System.out.println("getReqFile Error 0: " + ex.toString());
+                EventEntry eev = getEventEntry(ex.toString(), ipAddress, "file", user_email);
+                downloaderLogService.logEvent(eev);
+
+                throw new GeneralStreamingException(ex.toString(), 0);
             }
         }
 

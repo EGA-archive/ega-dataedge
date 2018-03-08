@@ -120,8 +120,7 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
         URI url = null;
         try {
             json = new ObjectMapper().writeValueAsString(eventEntry);
-            url = new URI(logUrl + "/log/download/");
-            //url = new URI(SERVICE_URL + "/log/download/");
+            url = new URI(logUrl + "/log/event/");
         } catch (JsonProcessingException | URISyntaxException ex) {
         }
 
