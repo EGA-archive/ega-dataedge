@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -35,6 +36,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
  * @author asenf
  */
 @RestController
+@CrossOrigin
 @EnableDiscoveryClient
 @RequestMapping("/tickets")
 public class TicketController {
