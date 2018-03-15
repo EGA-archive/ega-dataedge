@@ -568,7 +568,7 @@ public class RemoteFileServiceImpl implements FileService {
             int iStart = (int) (start);
             int iEnd = (int) (end);
             CloseableIterator<VariantContext> query = null;
-            if ((iEnd - iStart) > 0 && reference != null && reference.length() > 0) { // ref was specified
+            if (iEnd >0 &&  iEnd >= iStart && iStart > 0 && reference != null && reference.length() > 0) { // ref was specified
                 query = reader.query(reference, iStart, iEnd);
             } else { // no ref - ignore start/end
                 query = reader.iterator();
