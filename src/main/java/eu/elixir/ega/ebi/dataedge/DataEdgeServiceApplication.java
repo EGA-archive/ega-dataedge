@@ -17,6 +17,8 @@ package eu.elixir.ega.ebi.dataedge;
 
 import eu.elixir.ega.ebi.dataedge.config.MyConfiguration;
 import eu.elixir.ega.ebi.dataedge.config.OAuth2ResourceConfig;
+import eu.elixir.ega.ebi.dataedge.config.SecurityConfig;
+import eu.elixir.ega.ebi.dataedge.config.WebConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -30,7 +32,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 //@EnableCircuitBreaker
 //@EnableHystrix
 @SpringBootApplication
-@Import({MyConfiguration.class, OAuth2ResourceConfig.class})
+@Import({MyConfiguration.class, OAuth2ResourceConfig.class,
+         WebConfig.class, SecurityConfig.class})
 @EnableSwagger2
 @EnableEurekaClient
 public class DataEdgeServiceApplication {
