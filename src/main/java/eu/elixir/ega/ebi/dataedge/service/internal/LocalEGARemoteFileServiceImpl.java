@@ -70,6 +70,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
+                        String destinationIV,
                         long startCoordinate,
                         long endCoordinate,
                         HttpServletRequest request,
@@ -77,8 +78,24 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
 
         // Ascertain Access Permissions for specified File ID
         File reqFile = getReqFile(file_id, auth, request); // request added for ELIXIR
+        if (reqFile == null) {
+            try {
+                Thread.sleep(2500);
+            } catch (InterruptedException ex) {
+                ;
+            }
+            reqFile = getReqFile(file_id, auth, request);
+        }
         if (reqFile.getFileSize() > 0 && endCoordinate > reqFile.getFileSize())
             endCoordinate = reqFile.getFileSize();
+
+        // CLient IP
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        String user_email = auth.getName(); // For Logging
 
         // Variables needed for responses at the end of the function
         long timeDelta = 0;
@@ -86,6 +103,12 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         MessageDigest outDigest = null;
 
         if (reqFile != null) {
+            // Log request in Event
+            //    EventEntry eev_received = getEventEntry(file_id + ":" + destinationFormat + ":" + startCoordinate + ":" + endCoordinate,
+            //            ipAddress, "http_request", user_email);
+            //    eev_received.setEventType("request_log");
+            //    downloaderLogService.logEvent(eev_received);
+
             // Build Header - Specify UUID (Allow later stats query regarding this transfer)
             UUID dlIdentifier = UUID.randomUUID();
             String headerValue = dlIdentifier.toString();
@@ -95,15 +118,15 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
             response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
 
             // If byte range, set response 206
+            long fileLength = reqFile.getFileSize();
+            if (destinationFormat.equalsIgnoreCase("plain")) fileLength -= 16;
             if (startCoordinate > 0 || endCoordinate > 0) {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 response.addHeader("Content-Range", "bytes " + startCoordinate +
-                        "-" + (endCoordinate - 1) + "/" + reqFile.getFileSize());
+                        "-" + (endCoordinate - 1) + "/" + fileLength);
                 if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
                     response.setBufferSize((int) (endCoordinate - startCoordinate));
             }
-
-            String user_email = auth.getName(); // For Logging
 
             try {
                 // Get Send Stream - http Response, wrap in Digest Stream
@@ -139,7 +162,8 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
                     } catch (Throwable t) {
                         System.out.println("RemoteFileServiceImpl Error 1: " + t.toString());
                         inHashtext = t.getMessage();
-                        throw new GeneralStreamingException(t.toString(), 7);
+                        String errorMessage = t.toString();
+                        throw new GeneralStreamingException(errorMessage, 7);
                     }
 
                     // return number of bytes copied, RES session header, and MD5 of RES input stream
@@ -157,13 +181,14 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
                 timeDelta = System.currentTimeMillis();
                 int cnt = 2;
                 do {
-                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
+                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, destinationIV, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
                 } while (xferResult.getBytes() <= 0 && cnt-- > 0);
                 timeDelta = System.currentTimeMillis() - timeDelta;
 
             } catch (Throwable t) { // Log Error!
                 System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
-                EventEntry eev = getEventEntry(t, "TODO ClientIp", "Direct Download", user_email);
+                String errorMessage = file_id + ":" + destinationFormat + ":" + startCoordinate + ":" + endCoordinate + ":" + t.toString();
+                EventEntry eev = getEventEntry(errorMessage, ipAddress, "file", user_email);
                 downloaderLogService.logEvent(eev);
 
                 throw new GeneralStreamingException(t.toString(), 4);
@@ -189,10 +214,10 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
                     // Compare - Sent MD5 equals Received MD5? - Log Download in DB
                     boolean success = outHashtext.equals(inHashtext);
                     double speed = (xferResult.getBytes() / 1024.0 / 1024.0) / (timeDelta / 1000.0);
-                    long bytes = 0;
+                    long bytes = xferResult.getBytes();
                     System.out.println("Success? " + success + ", Speed: " + speed + " MB/s");
                     DownloadEntry dle = getDownloadEntry(success, speed, file_id,
-                            "TODO ClientIp", user_email, destinationFormat,
+                            ipAddress, "file", user_email, destinationFormat,
                             startCoordinate, endCoordinate, bytes);
                     downloaderLogService.logDownload(dle);
                 }
@@ -200,22 +225,14 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         }
     }
 
-    private String getDigestText(byte[] inDigest) {
-        BigInteger bigIntIn = new BigInteger(1, inDigest);
-        String hashtext = bigIntIn.toString(16);
-        while (hashtext.length() < 32) {
-            hashtext = "0" + hashtext;
-        }
-        return hashtext;
-    }
-
     @Override
-    //@HystrixCommand
     @Cacheable(cacheNames = "fileHead")
     public void getFileHead(Authentication auth,
                             String file_id,
+                            String destinationFormat,
                             HttpServletRequest request,
                             HttpServletResponse response) {
+
         throw new NotImplementedException();
     }
 
@@ -224,7 +241,6 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
      */
 
     @Override
-    //@HystrixCommand
     @Cacheable(cacheNames = "headerFile")
     public Object getFileHeader(Authentication auth,
                                 String file_id,
@@ -271,6 +287,18 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         throw new NotImplementedException();
     }
 
+    /*
+     * Helper Functions
+     */
+    private String getDigestText(byte[] inDigest) {
+        BigInteger bigIntIn = new BigInteger(1, inDigest);
+        String hashtext = bigIntIn.toString(16);
+        while (hashtext.length() < 32) {
+            hashtext = "0" + hashtext;
+        }
+        return hashtext;
+    }
+
     private HttpServletResponse setHeaders(HttpServletResponse response, String headerValue) {
         // Set headers for the response
         String headerKey = "X-Session";
@@ -289,6 +317,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
     private URI getResUri(String fileStableIdPath,
                           String destFormat,
                           String destKey,
+                          String destIV,
                           Long startCoord,
                           Long endCoord) {
         destFormat = destFormat.equals("AES") ? "aes128" : destFormat; // default to 128-bit if not specified
@@ -316,6 +345,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
             builder = UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("destinationFormat", destFormat)
                     .queryParam("destinationKey", destKey)
+                    .queryParam("destinationIV", destIV)
                     .queryParam("startCoordinate", startCoord)
                     .queryParam("endCoordinate", endCoord)
                     .queryParam("filePath", fileStableIdPath); // TEST!!
@@ -326,6 +356,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
 
     private DownloadEntry getDownloadEntry(boolean success, double speed, String fileId,
                                            String clientIp,
+                                           String server,
                                            String email,
                                            String encryptionType,
                                            long startCoordinate,
@@ -339,7 +370,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         dle.setClientIp(clientIp);
         dle.setEmail(email);
         dle.setDownloadProtocol("http");
-        dle.setServer("DATAEDGE");
+        dle.setServer(server);
         dle.setEncryptionType(encryptionType);
         dle.setStartCoordinate(startCoordinate);
         dle.setEndCoordinate(endCoordinate);
@@ -349,14 +380,13 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         return dle;
     }
 
-    //@HystrixCommand
-    private EventEntry getEventEntry(Throwable t, String clientIp,
+    private EventEntry getEventEntry(String t, String clientIp,
                                      String ticket,
                                      String email) {
         EventEntry eev = new EventEntry();
         eev.setEventId("0");
         eev.setClientIp(clientIp);
-        eev.setEvent(t.toString());
+        eev.setEvent(t);
         eev.setDownloadTicket(ticket);
         eev.setEventType("Error");
         eev.setEmail(email);
@@ -365,7 +395,6 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         return eev;
     }
 
-    //@HystrixCommand
     @Cacheable(cacheNames = "reqFile")
     private File getReqFile(String file_id, Authentication auth, HttpServletRequest request) {
 
@@ -389,6 +418,17 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
                     }
                 }
             } catch (Exception ex) {
+                String ipAddress = request.getHeader("X-FORWARDED-FOR");
+                if (ipAddress == null) {
+                    ipAddress = request.getRemoteAddr();
+                }
+                String user_email = auth.getName(); // For Logging
+
+                System.out.println("getReqFile Error 0: " + ex.toString());
+                EventEntry eev = getEventEntry(ex.toString(), ipAddress, "file", user_email);
+                downloaderLogService.logEvent(eev);
+
+                throw new GeneralStreamingException(ex.toString(), 0);
             }
         }
 
