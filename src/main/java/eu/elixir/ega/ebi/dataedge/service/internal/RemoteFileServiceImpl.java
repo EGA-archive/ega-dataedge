@@ -43,6 +43,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -79,6 +80,7 @@ import java.util.stream.Stream;
 /**
  * @author asenf
  */
+@Profile("!LocalEGA")
 @Service
 @Transactional
 @EnableDiscoveryClient

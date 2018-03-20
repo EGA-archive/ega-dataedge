@@ -27,7 +27,7 @@ import java.util.List;
  */
 public interface FileService {
 
-    public void getFile(Authentication auth,
+    void getFile(Authentication auth,
                         String file_id,
                         String destinationFormat,
                         String destinationKey,
@@ -37,18 +37,18 @@ public interface FileService {
                         HttpServletRequest request,
                         HttpServletResponse response);
 
-    public void getFileHead(Authentication auth,
+    void getFileHead(Authentication auth,
                             String file_id,
                             String destinationFormat,
                             HttpServletRequest request,
                             HttpServletResponse response);
 
-    public Object getFileHeader(Authentication auth,
+    Object getFileHeader(Authentication auth,
                                 String file_id,
                                 String destinationFormat,
                                 String destinationKey);
 
-    public void getById(Authentication auth,
+    void getById(Authentication auth,
                         String file_id,
                         String accession,
                         String format,
@@ -64,7 +64,7 @@ public interface FileService {
                         HttpServletRequest request,
                         HttpServletResponse response);
 
-    public void getVCFById(Authentication auth,
+    void getVCFById(Authentication auth,
                            String file_id,
                            String accession,
                            String format,
@@ -80,9 +80,10 @@ public interface FileService {
                            HttpServletRequest request,
                            HttpServletResponse response);
 
-    public ResponseEntity getHeadById(Authentication auth,
+    ResponseEntity getHeadById(Authentication auth,
                                       String file_id,
                                       String accession,
                                       HttpServletRequest request,
                                       HttpServletResponse response);
+
 }
