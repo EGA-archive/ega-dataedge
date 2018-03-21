@@ -38,6 +38,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 /**
  * @author asenf
@@ -66,14 +70,19 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
             }
         }, AbstractPreAuthenticatedProcessingFilter.class);
         http
+                .cors()
+                .and()
                 .requestMatchers()
-                .antMatchers("/files/**")
-                .antMatchers("/metadata/**")
-                .antMatchers("/tickets/**")
-                .antMatchers("/demo/**")
-                .antMatchers("/download/file/**")
-                .antMatchers("/stats/testme").and()
-                .authorizeRequests().anyRequest().authenticated()
+                    .antMatchers("/files/**")
+                    .antMatchers("/metadata/**")
+                    .antMatchers("/tickets/**")
+                    .antMatchers("/demo/**")
+                    .antMatchers("/download/file/**")
+                    .antMatchers("/stats/testme")
+                .and()
+                .authorizeRequests()
+                    .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .anyRequest().authenticated()
                 .and()
                 .csrf().disable();
     }
@@ -119,8 +128,8 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
     */
 
     @Bean
-	  @Profile("enable-aai")
-	  @Primary  
+    @Profile("enable-aai")
+    @Primary  
     public RemoteTokenServices remoteTokenServices(HttpServletRequest request,
                                                    //public RemoteTokenServices combinedTokenServices(HttpServletRequest request,
                                                    final @Value("${auth.server.url}") String checkTokenUrl,
@@ -151,4 +160,17 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
 
         return remoteTokenServices;
     }
+    
+    @Bean
+    @Order(0)
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true); 
+        config.addAllowedOrigin("*");
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
+    }    
 }

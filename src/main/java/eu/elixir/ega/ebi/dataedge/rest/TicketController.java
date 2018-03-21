@@ -28,21 +28,28 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 
 /**
  * @author asenf
  */
 @RestController
-@CrossOrigin
 @EnableDiscoveryClient
 @RequestMapping("/tickets")
 public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+
+    @RequestMapping(value = "/files/{file_id}", method = OPTIONS)
+    public void getTicket(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+    }
 
     @RequestMapping(value = "/files/{file_id}", method = GET)
     public Object getTicket(@PathVariable String file_id,
@@ -74,6 +81,11 @@ public class TicketController {
                 response);
     }
 
+    @RequestMapping(value = "/variants/{file_id}", method = OPTIONS)
+    public void getVariant(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+    }
+    
     @RequestMapping(value = "/variants/{file_id}", method = GET)
     public Object getVariantTicket(@PathVariable String file_id,
                                    @RequestParam(name = "format", required = false, defaultValue = "VCF") String format,
@@ -135,4 +147,8 @@ public class TicketController {
                                        response);
     }    
 */
+    @RequestMapping( value = "/**", method = RequestMethod.OPTIONS ) 
+    public ResponseEntity handle() { 
+        return new ResponseEntity(HttpStatus.OK); 
+    }
 }

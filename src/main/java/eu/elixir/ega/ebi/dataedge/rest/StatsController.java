@@ -29,8 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Set;
+import javax.servlet.http.HttpServletResponse;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 
 /**
  * @author asenf
@@ -54,6 +56,12 @@ public class StatsController {
         return ((int) (value * 1000) / 10.0);
     }
 
+    @RequestMapping(value = "/load", method = OPTIONS)
+    public void getLoadOptions(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+System.out.println("Adding Header load");
+    }
+    
     @RequestMapping(value = "/load", method = GET)
     @ResponseBody
     public String get() {
@@ -71,6 +79,11 @@ public class StatsController {
     /*
      * TEST ONLY: Test responses with calls using various tokens and routes
      */
+    @RequestMapping(value = "/testme", method = OPTIONS)
+    public void getTestOptions(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+System.out.println("Adding Header testme");
+    }
     @RequestMapping(value = "/testme", method = GET)
     @ResponseBody
     public String testme(HttpServletRequest servletRequest, @RequestHeader HttpHeaders headers) {

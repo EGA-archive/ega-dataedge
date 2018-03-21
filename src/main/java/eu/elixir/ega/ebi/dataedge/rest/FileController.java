@@ -22,17 +22,19 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.HEAD;
+import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,7 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @author asenf
  */
 @RestController
-@CrossOrigin
 @EnableDiscoveryClient
 @RequestMapping("/files")
 public class FileController {
@@ -107,6 +108,11 @@ public class FileController {
 
     }
 
+    @RequestMapping(value = "/byid/{type}", method = OPTIONS)
+    public void getById_(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+    }
+    
     // {id} -- 'file', 'sample', 'run', ...
     @RequestMapping(value = "/byid/{type}", method = GET)
     @ResponseBody
@@ -145,6 +151,11 @@ public class FileController {
                 response);
     }
 
+    @RequestMapping(value = "/variant/byid/{type}", method = OPTIONS)
+    public void getByVariantId_(HttpServletResponse response) {
+        response.addHeader("Access-Control-Request-Method", "GET");
+    }
+    
     @RequestMapping(value = "/variant/byid/{type}", method = GET)
     @ResponseBody
     public void getByVariantId(@PathVariable String type,
@@ -196,4 +207,8 @@ public class FileController {
         return fileService.getHeadById(auth, type, accession, request, response);
     }
 
+    @RequestMapping( value = "/**", method = RequestMethod.OPTIONS ) 
+    public ResponseEntity handle() { 
+        return new ResponseEntity(HttpStatus.OK); 
+    }
 }
