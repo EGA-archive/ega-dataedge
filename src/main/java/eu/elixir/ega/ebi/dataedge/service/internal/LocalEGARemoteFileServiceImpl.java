@@ -115,7 +115,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
             response = setHeaders(response, headerValue);
 
             // Content Length of response (if available)
-            response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
+//            response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
 
             // If byte range, set response 206
             long fileLength = reqFile.getFileSize();
