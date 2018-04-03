@@ -115,7 +115,7 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
             response = setHeaders(response, headerValue);
 
             // Content Length of response (if available)
-            response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
+//            response.setContentLengthLong(getContentLength(reqFile, destinationFormat, startCoordinate, endCoordinate));
 
             // If byte range, set response 206
             long fileLength = reqFile.getFileSize();
@@ -179,14 +179,11 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
 
                 // Build Request URI with Ticket Parameters and get requested file from RES (timed for statistics)
                 timeDelta = System.currentTimeMillis();
-                int cnt = 2;
-                do {
-                    xferResult = restTemplate.execute(getResUri(file_id, destinationFormat, destinationKey, destinationIV, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
-                } while (xferResult.getBytes() <= 0 && cnt-- > 0);
+                xferResult = restTemplate.execute(getResUri(reqFile.getFileName(), destinationFormat, destinationKey, destinationIV, startCoordinate, endCoordinate), HttpMethod.GET, requestCallback, responseExtractor);
                 timeDelta = System.currentTimeMillis() - timeDelta;
 
             } catch (Throwable t) { // Log Error!
-                System.out.println("RemoteFileServiceImpl Error 2: " + t.toString());
+                System.out.println("LocalEGARemoteFileServiceImpl Error 2: " + t.toString());
                 String errorMessage = file_id + ":" + destinationFormat + ":" + startCoordinate + ":" + endCoordinate + ":" + t.toString();
                 EventEntry eev = getEventEntry(errorMessage, ipAddress, "file", user_email);
                 downloaderLogService.logEvent(eev);
