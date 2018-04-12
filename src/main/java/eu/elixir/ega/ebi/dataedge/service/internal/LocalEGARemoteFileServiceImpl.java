@@ -23,6 +23,7 @@ import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
 import eu.elixir.ega.ebi.dataedge.service.FileService;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import org.apache.commons.lang.NotImplementedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -242,7 +243,8 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
     public Object getFileHeader(Authentication auth,
                                 String file_id,
                                 String destinationFormat,
-                                String destinationKey) {
+                                String destinationKey,
+                                CRAMReferenceSource x) {
         throw new NotImplementedException();
     }
 

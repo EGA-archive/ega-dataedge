@@ -15,6 +15,7 @@
  */
 package eu.elixir.ega.ebi.dataedge.service;
 
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
@@ -46,7 +47,8 @@ public interface FileService {
     Object getFileHeader(Authentication auth,
                                 String file_id,
                                 String destinationFormat,
-                                String destinationKey);
+                                String destinationKey,
+                                CRAMReferenceSource x);
 
     void getById(Authentication auth,
                         String file_id,

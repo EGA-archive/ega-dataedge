@@ -104,7 +104,8 @@ public class FileController {
         return fileService.getFileHeader(auth,
                 file_id,
                 destinationFormat,
-                destinationKey);
+                destinationKey,
+                null);  // This by default makes it BAM
 
     }
 

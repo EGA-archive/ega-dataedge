@@ -48,8 +48,10 @@ import java.util.concurrent.TimeUnit;
 public class MyConfiguration {
     @Value("${ega.ega.external.url}")
     String externalUrl;
-    @Value("${ega.ega.cram.fasta}")
-    String cramFastaReference;
+    @Value("${ega.ega.cram.fasta.a}")
+    String cramFastaReferenceA;
+    @Value("${ega.ega.cram.fasta.b}")
+    String cramFastaReferenceB;
 
     // Ribbon Load Balanced Rest Template for communication with other Microservices
 
@@ -140,6 +142,6 @@ public class MyConfiguration {
 
     @Bean
     public MyExternalConfig MyArchiveConfig() {
-        return new MyExternalConfig(externalUrl, cramFastaReference);
+        return new MyExternalConfig(externalUrl, cramFastaReferenceA, cramFastaReferenceB);
     }
 }

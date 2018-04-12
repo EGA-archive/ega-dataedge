@@ -62,6 +62,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
@@ -185,14 +186,27 @@ public class RemoteFileServiceImpl implements FileService {
                     long b = 0;
                     String inHashtext = "";
                     try {
+                        // If the stream is encrypted, and coordinates are specified,
+                        // there is a possibility that 0-15 extra bytes are sent, because
+                        // of the 16-byte AES Block size - read these bytes before moving on 
+                        InputStream inOrig = response_.getBody();
+                        if (destinationFormat.toLowerCase().startsWith("aes") && 
+                                destinationIV!= null && destinationIV.length() > 0) {
+                            long blockStart = (startCoordinate / 16) * 16;
+                            int blockDelta = (int) (startCoordinate - blockStart);
+                            if (blockDelta > 0)
+                                inOrig.read(new byte[blockDelta]);
+                        }
+                                                
                         // Input stream from RES, wrap in DigestStream
                         MessageDigest inDigest = MessageDigest.getInstance("MD5");
-                        DigestInputStream inDigestStream = new DigestInputStream(response_.getBody(), inDigest);
+                        //DigestInputStream inDigestStream = new DigestInputStream(response_.getBody(), inDigest);
+                        DigestInputStream inDigestStream = new DigestInputStream(inOrig, inDigest);
                         if (inDigestStream == null) {
                             System.out.println("RemoteFileServiceImpl Error 0: ");
                             throw new GeneralStreamingException("Unable to obtain Input Stream", 2);
                         }
-
+                        
                         // The actual Data Transfer - copy bytes from RES to Http connection to client
                         b = ByteStreams.copy(inDigestStream, outDigestStream); // in, outputStream
 
@@ -301,7 +315,8 @@ public class RemoteFileServiceImpl implements FileService {
     public Object getFileHeader(Authentication auth,
                                 String file_id,
                                 String destinationFormat,
-                                String destinationKey) {
+                                String destinationKey,
+                                CRAMReferenceSource x) {
         Object header = null;
 
         // Ascertain Access Permissions for specified File ID
@@ -310,16 +325,26 @@ public class RemoteFileServiceImpl implements FileService {
             URL resUrl;
             try {
                 resUrl = new URL(resUrl() + "/file/archive/" + reqFile.getFileId()); // Just specify file ID
-
                 //SeekableStream cIn = new EgaSeekableResStream(resUrl, null, -1); // Deals with coordinates
-                SeekableStream cIn = new EgaSeekableCachedResStream(resUrl); // Deals with coordinates
-
+                SeekableStream cIn = new EgaSeekableCachedResStream(resUrl, null, null, reqFile.getFileSize()); // Deals with coordinates
                 // SamReader with input stream based on RES URL
-                SamReader reader =
-                        SamReaderFactory.make()
+            //    SamReader reader =
+            //            SamReaderFactory.make()
+            //                    .validationStringency(ValidationStringency.LENIENT)
+            //                    .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+            //                    .open(SamInputResource.of(cIn));
+                SamReader reader = (x == null) ?
+                        (SamReaderFactory.make()            // BAM File
                                 .validationStringency(ValidationStringency.LENIENT)
+                                .enable(Option.CACHE_FILE_BASED_INDEXES)
                                 .samRecordFactory(DefaultSAMRecordFactory.getInstance())
-                                .open(SamInputResource.of(cIn));
+                                .open(SamInputResource.of(cIn))) :
+                        (SamReaderFactory.make()            // CRAM File
+                                .referenceSource(x)
+                                .validationStringency(ValidationStringency.LENIENT)
+                                .enable(Option.CACHE_FILE_BASED_INDEXES)
+                                .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                                .open(SamInputResource.of(cIn)));
                 header = reader.getFileHeader();
                 reader.close();
             } catch (MalformedURLException ex) {
@@ -332,6 +357,14 @@ public class RemoteFileServiceImpl implements FileService {
         return header;
     }
 
+    //Hack
+    private boolean isRDConnect(File reqFile) {
+        if (reqFile.getDatasetId().equalsIgnoreCase("EGAD00001003952")) {
+            return true;
+        }
+        return false;
+    }
+    
     @Override
     //@HystrixCommand
     public void getById(Authentication auth,
@@ -381,7 +414,12 @@ public class RemoteFileServiceImpl implements FileService {
                     extension = ".bam";
                 } else if (reqFile.getFileName().contains(".cram")) {
                     extension = ".cram";
-                    x = new ReferenceSource(new java.io.File(externalConfig.getCramFastaReference()));
+
+                    // hack: differentiate between two file sources
+                    //x = new ReferenceSource(new java.io.File(externalConfig.getCramFastaReferenceA()));
+                    x = (isRDConnect(reqFile)) ? 
+                            new ReferenceSource(new java.io.File(externalConfig.getCramFastaReferenceB())) :
+                            new ReferenceSource(new java.io.File(externalConfig.getCramFastaReferenceA()));
                 }
 
                 // BAM/CRAM File
@@ -448,8 +486,15 @@ public class RemoteFileServiceImpl implements FileService {
                         writer.close();
                     }
                 } else if (format.equalsIgnoreCase("CRAM")) { // Must specify Reference fasta file
+                    // Decide on Reference
+                    String refFPath = (isRDConnect(reqFile)) ? 
+                            externalConfig.getCramFastaReferenceB() :
+                            externalConfig.getCramFastaReferenceA();
+                    
+                    //try (CRAMFileWriter writer = writerFactory
+                    //        .makeCRAMWriter(fileHeader, out, new java.io.File(externalConfig.getCramFastaReference()))) {
                     try (CRAMFileWriter writer = writerFactory
-                            .makeCRAMWriter(fileHeader, out, new java.io.File(externalConfig.getCramFastaReference()))) {
+                            .makeCRAMWriter(fileHeader, out, new java.io.File(refFPath))) {
                         Stream<SAMRecord> stream = query.stream();
                         Iterator<SAMRecord> iterator = stream.iterator();
                         while (iterator.hasNext()) {
