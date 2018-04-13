@@ -130,6 +130,11 @@ public class RemoteFileServiceImpl implements FileService {
         }
         if (reqFile.getFileSize() > 0 && endCoordinate > reqFile.getFileSize())
             endCoordinate = reqFile.getFileSize();
+        
+        // File Archive Type - Reject GPG
+        if (reqFile!=null && reqFile.getFileName().toLowerCase().endsWith("gpg")) {
+            throw new NotImplementedException("Please contact EGA to download this file.");
+        }
 
         // CLient IP
         String ipAddress = request.getHeader("X-FORWARDED-FOR");  
