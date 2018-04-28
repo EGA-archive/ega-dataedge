@@ -17,6 +17,7 @@ package eu.elixir.ega.ebi.dataedge.rest;
 
 
 import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
+import eu.elixir.ega.ebi.dataedge.config.VerifyMessageNew;
 import eu.elixir.ega.ebi.dataedge.dto.File;
 import eu.elixir.ega.ebi.dataedge.service.FileMetaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class MetadataController {
         } else { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
             //String permissions = request.getHeader("X-Permissions");
             try {
-                List<String> permissions = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+                List<String> permissions = (new VerifyMessageNew(request.getHeader("X-Permissions"))).getPermissions();
                 if (permissions != null && permissions.size() > 0) {
                     //StringTokenizer t = new StringTokenizer(permissions, ",");
                     //while (t!=null && t.hasMoreTokens()) {

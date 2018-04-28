@@ -814,16 +814,30 @@ public class RemoteFileServiceImpl implements FileService {
                 permissions.add(next.getAuthority());
             }
         } else if (request != null) { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
+            //String permissions = request.getHeader("X-Permissions");
             try {
-                List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+                List<String> permissions_ = (new VerifyMessageNew(request.getHeader("X-Permissions"))).getPermissions();
                 if (permissions_ != null && permissions_.size() > 0) {
+                    //StringTokenizer t = new StringTokenizer(permissions, ",");
+                    //while (t!=null && t.hasMoreTokens()) {
                     for (String ds : permissions_) {
-                        if (ds != null) {
-                            permissions.add(ds);
-                        }
+                        //String ds = t.nextToken();
+                        if (ds != null && ds.length() > 0) permissions.add(ds);
                     }
                 }
             } catch (Exception ex) {
+            //}
+            //
+            //try {
+            //    List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+            //    if (permissions_ != null && permissions_.size() > 0) {
+            //        for (String ds : permissions_) {
+            //            if (ds != null) {
+            //                permissions.add(ds);
+            //            }
+            //        }
+            //    }
+            //} catch (Exception ex) {
                 String ipAddress = request.getHeader("X-FORWARDED-FOR");  
                    if (ipAddress == null) {  
                      ipAddress = request.getRemoteAddr();  

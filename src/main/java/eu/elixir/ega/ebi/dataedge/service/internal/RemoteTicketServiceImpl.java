@@ -19,6 +19,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import eu.elixir.ega.ebi.dataedge.config.NotFoundException;
 import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
+import eu.elixir.ega.ebi.dataedge.config.VerifyMessageNew;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.TicketService;
 import htsjdk.samtools.BAMFileSpan;
@@ -379,15 +380,26 @@ public class RemoteTicketServiceImpl implements TicketService {
             }
         } else if (request != null) { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
             try {
-                List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+                List<String> permissions_ = (new VerifyMessageNew(request.getHeader("X-Permissions"))).getPermissions();
                 if (permissions_ != null && permissions_.size() > 0) {
+                    //StringTokenizer t = new StringTokenizer(permissions, ",");
+                    //while (t!=null && t.hasMoreTokens()) {
                     for (String ds : permissions_) {
-                        if (ds != null) {
-                            permissions.add(ds);
-                        }
+                        //String ds = t.nextToken();
+                        if (ds != null && ds.length() > 0) permissions.add(ds);
                     }
                 }
             } catch (Exception ex) {
+            //try {
+            //    List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+            //    if (permissions_ != null && permissions_.size() > 0) {
+            //        for (String ds : permissions_) {
+            //            if (ds != null) {
+            //                permissions.add(ds);
+            //            }
+            //        }
+            //    }
+            //} catch (Exception ex) {
             }
         }
 

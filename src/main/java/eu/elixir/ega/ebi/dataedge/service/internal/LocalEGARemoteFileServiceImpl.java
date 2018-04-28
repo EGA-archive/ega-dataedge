@@ -20,6 +20,7 @@ import eu.elixir.ega.ebi.dataedge.config.GeneralStreamingException;
 import eu.elixir.ega.ebi.dataedge.config.NotFoundException;
 import eu.elixir.ega.ebi.dataedge.config.PermissionDeniedException;
 import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
+import eu.elixir.ega.ebi.dataedge.config.VerifyMessageNew;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.DownloaderLogService;
 import eu.elixir.ega.ebi.dataedge.service.FileService;
@@ -408,15 +409,26 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
             }
         } else if (request != null) { // ELIXIR User Case: Obtain Permmissions from X-Permissions Header
             try {
-                List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+                List<String> permissions_ = (new VerifyMessageNew(request.getHeader("X-Permissions"))).getPermissions();
                 if (permissions_ != null && permissions_.size() > 0) {
+                    //StringTokenizer t = new StringTokenizer(permissions, ",");
+                    //while (t!=null && t.hasMoreTokens()) {
                     for (String ds : permissions_) {
-                        if (ds != null) {
-                            permissions.add(ds);
-                        }
+                        //String ds = t.nextToken();
+                        if (ds != null && ds.length() > 0) permissions.add(ds);
                     }
                 }
             } catch (Exception ex) {
+            //try {
+            //    List<String> permissions_ = (new VerifyMessage(request.getHeader("X-Permissions"))).getPermissions();
+            //    if (permissions_ != null && permissions_.size() > 0) {
+            //        for (String ds : permissions_) {
+            //            if (ds != null) {
+            //                permissions.add(ds);
+            //            }
+            //        }
+            //    }
+            //} catch (Exception ex) {
                 String ipAddress = request.getHeader("X-FORWARDED-FOR");
                 if (ipAddress == null) {
                     ipAddress = request.getRemoteAddr();

@@ -138,26 +138,46 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
                                                    final @Value("${auth.zuul.server.url}") String zuulCheckTokenUrl,
                                                    final @Value("${auth.zuul.server.clientId}") String zuulClientId,
                                                    final @Value("${auth.zuul.server.clientsecret}") String zuulClientSecret) {
-        final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
+    //    final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
 
-        String header = null;
-        try {
-            header = request.getHeader("X-Permissions");
-        } catch (Throwable t) {
-            System.out.println("Error " + t.getMessage());
-        }
+    //    String header = null;
+    //    try {
+    //        header = request.getHeader("X-Permissions");
+    //    } catch (Throwable t) {
+    //        System.out.println("Error " + t.getMessage());
+    //    }
 
-        if (header != null && header.length() > 0) {
-            remoteTokenServices.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
-            remoteTokenServices.setClientId(zuulClientId);
-            remoteTokenServices.setClientSecret(zuulClientSecret);
-        } else {
-            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-            remoteTokenServices.setClientId(clientId);
-            remoteTokenServices.setClientSecret(clientSecret);
-            remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-        }
+    //    if (header != null && header.length() > 0) {
+    //        remoteTokenServices.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
+    //        remoteTokenServices.setClientId(zuulClientId);
+    //        remoteTokenServices.setClientSecret(zuulClientSecret);
+    //    } else {
+    //        remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
+    //        remoteTokenServices.setClientId(clientId);
+    //        remoteTokenServices.setClientSecret(clientSecret);
+    //        remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
+    //    }
+    
+        /*
+         * New Token Implementation
+         */
+        final CachingMultipleRemoteTokenService remoteTokenServices = new CachingMultipleRemoteTokenService();
 
+        // ELIXIR AAI
+        CachingRemoteTokenService a = new CachingRemoteTokenService();
+        a.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
+        a.setClientId(zuulClientId);
+        a.setClientSecret(zuulClientSecret);
+        remoteTokenServices.addRemoteTokenService(a);
+        
+        // EGA AAI
+        CachingRemoteTokenService b = new CachingRemoteTokenService();
+        b.setCheckTokenEndpointUrl(checkTokenUrl);
+        b.setClientId(clientId);
+        b.setClientSecret(clientSecret);
+        b.setAccessTokenConverter(accessTokenConverter());
+        remoteTokenServices.addRemoteTokenService(b);
+        
         return remoteTokenServices;
     }
     

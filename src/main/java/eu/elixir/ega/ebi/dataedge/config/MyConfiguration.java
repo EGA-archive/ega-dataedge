@@ -113,6 +113,9 @@ public class MyConfiguration {
         GuavaCache tokens = new GuavaCache("tokens", CacheBuilder.newBuilder()
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build());
+        GuavaCache access = new GuavaCache("access", CacheBuilder.newBuilder()
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build());
         GuavaCache reqFile = new GuavaCache("reqFile", CacheBuilder.newBuilder()
                 .expireAfterWrite(24, TimeUnit.HOURS)
                 .build());
@@ -135,8 +138,8 @@ public class MyConfiguration {
                 .expireAfterWrite(24, TimeUnit.HOURS)
                 .build());
 
-        simpleCacheManager.setCaches(Arrays.asList(tokens, reqFile, index, fileHead,
-                headerFile, fileSize, fileFile, fileDatasetFile));
+        simpleCacheManager.setCaches(Arrays.asList(tokens, access, reqFile, index, 
+                fileHead, headerFile, fileSize, fileFile, fileDatasetFile));
         return simpleCacheManager;
     }
 

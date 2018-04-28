@@ -15,9 +15,7 @@
  */
 package eu.elixir.ega.ebi.dataedge.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.cache.annotation.Cacheable;
+import java.util.ArrayList;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -28,27 +26,55 @@ import org.springframework.security.oauth2.provider.token.RemoteTokenServices;
 /**
  * @author asenf
  */
-public class CachingRemoteTokenService extends RemoteTokenServices {
+public class CachingMultipleRemoteTokenService extends RemoteTokenServices {
 
-    private static Log log = LogFactory.getLog(CachingRemoteTokenService.class);
+    /*
+     * Additional Code to handle a list of token services
+     */
+    ArrayList<CachingRemoteTokenService> remoteServices;
+
+    public void addRemoteTokenService(CachingRemoteTokenService service) {
+        if (remoteServices==null)
+            remoteServices = new ArrayList<>();
+
+        remoteServices.add(service);
+    }
+    
+    /*
+     * Code adjusted to handle a list of remote services
+     */    
 
     @Override
-    @Cacheable(cacheNames = "tokens", key = "#root.methodName + #accessToken")
     public OAuth2Authentication loadAuthentication(String accessToken)
             throws org.springframework.security.core.AuthenticationException,
             InvalidTokenException {
-        log.info("loadAuthentication: " + accessToken);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        log.debug("Entering CachingRemoteTokenService auth: " + auth);
-        return super.loadAuthentication(accessToken);
+        
+        OAuth2Authentication loadAuthentication = null;
+        for (int i=0; i<remoteServices.size(); i++) {
+            try {
+                loadAuthentication = remoteServices.get(i).loadAuthentication(accessToken);
+            } catch (IllegalStateException ex) {
+                System.out.println(ex.toString());
+            }
+            if (loadAuthentication!=null && loadAuthentication.isAuthenticated()) break;
+        }
+        return loadAuthentication;
+
+        //return super.loadAuthentication(accessToken);
     }
 
     @Override
-    @Cacheable(cacheNames = "access", key = "#root.methodName + #accessToken")
     public OAuth2AccessToken readAccessToken(String accessToken) {
-        log.info("readAccessToken: " + accessToken);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        log.debug("Entering CachingRemoteTokenService auth: " + auth);
-        return super.readAccessToken(accessToken);
+        
+        OAuth2AccessToken readAccess = null;
+        for (int i=0; i<remoteServices.size(); i++) {
+            readAccess = remoteServices.get(i).readAccessToken(accessToken);
+            if (!readAccess.isExpired()) break;
+        }
+        return readAccess;
+        
+        //return super.readAccessToken(accessToken);
     }
 }
