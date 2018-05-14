@@ -16,6 +16,7 @@
 package eu.elixir.ega.ebi.dataedge.config;
 
 import java.util.ArrayList;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -45,6 +46,7 @@ public class CachingMultipleRemoteTokenService extends RemoteTokenServices {
      */    
 
     @Override
+    @Cacheable(cacheNames = "tokens", key = "#root.methodName + #accessToken")
     public OAuth2Authentication loadAuthentication(String accessToken)
             throws org.springframework.security.core.AuthenticationException,
             InvalidTokenException {
@@ -65,6 +67,7 @@ public class CachingMultipleRemoteTokenService extends RemoteTokenServices {
     }
 
     @Override
+    @Cacheable(cacheNames = "access", key = "#root.methodName + #accessToken")
     public OAuth2AccessToken readAccessToken(String accessToken) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         

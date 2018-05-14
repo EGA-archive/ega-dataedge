@@ -75,6 +75,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import static org.apache.catalina.connector.OutputBuffer.DEFAULT_BUFFER_SIZE;
 
 //import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
@@ -171,8 +172,10 @@ public class RemoteFileServiceImpl implements FileService {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 response.addHeader("Content-Range", "bytes " + startCoordinate +
                         "-" + (endCoordinate - 1) + "/" + fileLength);
-                if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
-                    response.setBufferSize((int) (endCoordinate - startCoordinate));
+//System.out.println(" ^^^^^^^^^^^ setting buffer: " + (endCoordinate - startCoordinate));
+//                if (endCoordinate - startCoordinate < Integer.MAX_VALUE)
+//                    response.setBufferSize((int) (endCoordinate - startCoordinate));
+                response.setBufferSize(DEFAULT_BUFFER_SIZE);
             }
 
             try {

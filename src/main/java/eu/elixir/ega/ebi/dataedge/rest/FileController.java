@@ -17,6 +17,7 @@ package eu.elixir.ega.ebi.dataedge.rest;
 
 import eu.elixir.ega.ebi.dataedge.config.InvalidAuthenticationException;
 import eu.elixir.ega.ebi.dataedge.service.FileService;
+import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -77,6 +80,12 @@ public class FileController {
                 endCoordinate,
                 request,
                 response);
+        
+        try {
+            response.flushBuffer();
+        } catch (IOException ex) {
+            Logger.getLogger(FileController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @RequestMapping(value = "/{file_id}", method = HEAD)

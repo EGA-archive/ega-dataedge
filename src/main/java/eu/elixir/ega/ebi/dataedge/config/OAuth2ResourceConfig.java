@@ -98,35 +98,6 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
         //return new DefaultAccessTokenConverter();
     }
 
-    /*
-        @Primary
-        @Bean
-        public RemoteTokenServices remoteTokenServices(final @Value("${auth.server.url}") String checkTokenUrl,
-                final @Value("${auth.server.clientId}") String clientId,
-                final @Value("${auth.server.clientsecret}") String clientSecret) {
-            //final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
-            final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
-            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-            remoteTokenServices.setClientId(clientId);
-            remoteTokenServices.setClientSecret(clientSecret);
-            remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-            return remoteTokenServices;
-        }
-
-        @Bean
-        public RemoteTokenServices remoteZuulTokenServices(final @Value("${auth.zuul.server.url}") String checkTokenUrl,
-                final @Value("${auth.zuul.server.clientId}") String clientId,
-                final @Value("${auth.zuul.server.clientsecret}") String clientSecret) {
-            //final RemoteTokenServices remoteTokenServices = new RemoteTokenServices();
-            final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
-            remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-            remoteTokenServices.setClientId(clientId);
-            remoteTokenServices.setClientSecret(clientSecret);
-            //remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-            return remoteTokenServices;
-        }
-    */
-
     @Bean
     @Profile("enable-aai")
     @Primary  
@@ -138,38 +109,9 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
                                                    final @Value("${auth.zuul.server.url}") String zuulCheckTokenUrl,
                                                    final @Value("${auth.zuul.server.clientId}") String zuulClientId,
                                                    final @Value("${auth.zuul.server.clientsecret}") String zuulClientSecret) {
-    //    final CachingRemoteTokenService remoteTokenServices = new CachingRemoteTokenService();
 
-    //    String header = null;
-    //    try {
-    //        header = request.getHeader("X-Permissions");
-    //    } catch (Throwable t) {
-    //        System.out.println("Error " + t.getMessage());
-    //    }
-
-    //    if (header != null && header.length() > 0) {
-    //        remoteTokenServices.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
-    //        remoteTokenServices.setClientId(zuulClientId);
-    //        remoteTokenServices.setClientSecret(zuulClientSecret);
-    //    } else {
-    //        remoteTokenServices.setCheckTokenEndpointUrl(checkTokenUrl);
-    //        remoteTokenServices.setClientId(clientId);
-    //        remoteTokenServices.setClientSecret(clientSecret);
-    //        remoteTokenServices.setAccessTokenConverter(accessTokenConverter());
-    //    }
-    
-        /*
-         * New Token Implementation
-         */
         final CachingMultipleRemoteTokenService remoteTokenServices = new CachingMultipleRemoteTokenService();
 
-        // ELIXIR AAI
-        CachingRemoteTokenService a = new CachingRemoteTokenService();
-        a.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
-        a.setClientId(zuulClientId);
-        a.setClientSecret(zuulClientSecret);
-        remoteTokenServices.addRemoteTokenService(a);
-        
         // EGA AAI
         CachingRemoteTokenService b = new CachingRemoteTokenService();
         b.setCheckTokenEndpointUrl(checkTokenUrl);
@@ -177,6 +119,13 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
         b.setClientSecret(clientSecret);
         b.setAccessTokenConverter(accessTokenConverter());
         remoteTokenServices.addRemoteTokenService(b);
+        
+        // ELIXIR AAI
+        CachingRemoteTokenService a = new CachingRemoteTokenService();
+        a.setCheckTokenEndpointUrl(zuulCheckTokenUrl);
+        a.setClientId(zuulClientId);
+        a.setClientSecret(zuulClientSecret);
+        remoteTokenServices.addRemoteTokenService(a);
         
         return remoteTokenServices;
     }
