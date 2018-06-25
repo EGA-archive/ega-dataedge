@@ -1,6 +1,6 @@
 package eu.elixir.ega.ebi.dataedge.rest.ena.htsget.controllers;
 
-import eu.elixir.ega.ebi.dataedge.dto.ena.dto.LinkToSequence;
+import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENATicketService;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAftpDownloader;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.FastqConverter;
@@ -16,31 +16,17 @@ import java.io.*;
 @RequestMapping("/ga4gh")
 public class ENATicketController {
 
-    private ENAftpDownloader downloader;
     private ENATicketService linkService;
-    private FastqConverter converter;
 
     @Autowired
-    ENATicketController(ENAftpDownloader downloader, ENATicketService linkService, FastqConverter converter){
-        this.downloader = downloader;
+    ENATicketController(ENATicketService linkService){
         this.linkService = linkService;
-        this.converter = converter;
-    }
-    @RequestMapping("/sample/{Biosample_ID}")
-    public Object getTicket(@PathVariable String biosampleID,
-                            @RequestParam(name = "format", required = false, defaultValue = "BAM") String format) {
-        LinkToSequence link = linkService.getLinkToFile(biosampleID);
-        InputStream inputStream = downloader.getFastqFile(link.getFtpLink().get(0));
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        OutputStream outputStream = converter.convertToBam(reader);
-
-        return null;
     }
 
+    @RequestMapping("sample/{Biosample_ID}")
+    public RawTicket getTicket(@PathVariable String biosampleID,
+                               @RequestParam(name = "format", required = false, defaultValue = "BAM") String format) {
+        return linkService.getLinkToFile(biosampleID,format);
+    }
 
 }

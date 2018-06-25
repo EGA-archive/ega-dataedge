@@ -1,7 +1,7 @@
 package eu.elixir.ega.ebi.dataedge.service.ena.htsget.service;
 
-import eu.elixir.ega.ebi.dataedge.dto.ena.dto.LinkToSequence;
+import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
 
 public interface SequenceLinkService {
-    public LinkToSequence getLinkToFile(String accession);
+    public RawTicket getLinkToFile(String accession, String format);
 }

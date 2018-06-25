@@ -9,7 +9,10 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ENAftpDownloaderTest {
-
+    /**
+     * For running this test you need to put into root folder of project ERR1777637_1.fastq.gz
+     from ftp.sra.ebi.ac.uk/vol1/fastq/ERR177/007/ERR1777637/ERR1777637_1.fastq.gz
+     **/
     @Test
     public void downloadingTest1() throws IOException {
         String pathToExpectedFile = "C:\\Users\\dilsc\\Desktop\\ega-dataedge\\ERR1777637_1.fastq.gz";
