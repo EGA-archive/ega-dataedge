@@ -11,11 +11,24 @@ import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.SequenceLinkService
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
+
+/**
+ * Class for creating ticket (htsget)
+ */
 @Service
 public class ENATicketService implements SequenceLinkService {
 
+    /**
+     * gets link to fastq file for given accession and additional data for this accession (size of file and md5 hash),
+     * thats represented by raw ticket that can be serialized to json ticket according htsget specs
+     *
+     * @param accession biosample_id
+     * @param format    format of file
+     * @return raw tiket to sequences
+     */
     @Override
-    public RawTicket getLinkToFile(String accession,String format) {
+    public RawTicket getLinkToFile(String accession, String format) {
         //TODO move link to properties
         HttpRequest<String> request = HttpRequestBuilder.
                 createGet(String.format("https://www.ebi.ac.uk/ena/portal/api/filereport?result=read_run&accession=%s&format=json",accession), String.class)
@@ -43,4 +56,10 @@ public class ENATicketService implements SequenceLinkService {
         link.setFormat(format);
         return link;
     }
+
+    public boolean isPartOfFileExist(List<String>urls,String part){
+        return urls.size() > Integer.parseInt(part);
+    }
+
 }
+
