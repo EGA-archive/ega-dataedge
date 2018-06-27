@@ -1,6 +1,6 @@
 package test;
 
-import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAftpDownloader;
+import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAFtpDownloader;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -17,7 +17,7 @@ class ENAftpDownloaderTest {
     public void downloadingTest1() throws IOException {
         String pathToExpectedFile = "C:\\Users\\dilsc\\Desktop\\ega-dataedge\\ERR1777637_1.fastq.gz";
         File expectedFile = new File(pathToExpectedFile);
-        ENAftpDownloader downloader = new ENAftpDownloader();
+        ENAFtpDownloader downloader = new ENAFtpDownloader();
         InputStream receivedStream = downloader.getFastqFile("ftp.sra.ebi.ac.uk/vol1/fastq/ERR177/007/ERR1777637/ERR1777637_1.fastq.gz");
         File downloadedFile = writeToFile(receivedStream);
         assertTrue(fileEquals(expectedFile,downloadedFile));
