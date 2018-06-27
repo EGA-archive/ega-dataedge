@@ -6,6 +6,10 @@ import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.TicketSeri
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+/**
+ * Raw ticket to sequences. Can be serialized according htsget specs
+ */
 @JsonSerialize(using = TicketSerializer.class)
 public class RawTicket {
     private String accession;
@@ -51,13 +55,13 @@ public class RawTicket {
     }
 
     public void setMd5Hash(String md5Hash) {
-        this.md5Hashs =  Arrays.asList(md5Hash.split(";"));
+        this.md5Hashs = Arrays.asList(md5Hash.split(";"));
     }
 
-    public String getOverallHash(){
-        if(ftpLink.size()==0 || ftpLink.size()>1 ){
+    public String getOverallHash() {
+        if (ftpLink.size() == 0 || ftpLink.size() > 1) {
             return "";
-        }else {
+        } else {
             return md5Hashs.get(0); // return hash only if there only one file(hash)
         }
     }
