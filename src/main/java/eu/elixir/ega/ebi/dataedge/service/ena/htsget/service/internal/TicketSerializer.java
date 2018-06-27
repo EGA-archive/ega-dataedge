@@ -39,6 +39,7 @@ public class TicketSerializer extends StdSerializer<RawTicket> {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("format", linkToSequence.getFormat());
         jsonGenerator.writeArrayFieldStart("urls");
+
         for (String url : linkToSequence.getFtpLink()) {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("url", String.format("%s/sample?accesion=%s&format=%s", externalUrl, linkToSequence.getAccession(), linkToSequence.getFormat()));
