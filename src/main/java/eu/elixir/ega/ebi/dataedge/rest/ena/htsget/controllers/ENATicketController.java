@@ -1,16 +1,11 @@
 package eu.elixir.ega.ebi.dataedge.rest.ena.htsget.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.elixir.ega.ebi.dataedge.config.UnsupportedFormatException;
 import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENATicketService;
-import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAftpDownloader;
-import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.FastqConverter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.io.*;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/ga4gh")
@@ -23,9 +18,12 @@ public class ENATicketController {
         this.linkService = linkService;
     }
 
-    @RequestMapping("sample/{Biosample_ID}")
-    public RawTicket getTicket(@PathVariable String biosampleID,
-                               @RequestParam(name = "format", required = false, defaultValue = "BAM") String format) {
+    @RequestMapping(value = "sample/{Biosample_ID}", method = RequestMethod.GET, produces = "application/json")
+    public RawTicket getTicket(@PathVariable("Biosample_ID") String biosampleID,
+                               @RequestParam(name = "format", required = false, defaultValue = "BAM") String format) throws JsonProcessingException {
+        if((format.equals("BAM")||format.equals("CRAM"))){
+            throw new UnsupportedFormatException(format);
+        }
         return linkService.getLinkToFile(biosampleID,format);
     }
 
