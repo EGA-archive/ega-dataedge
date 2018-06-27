@@ -1,36 +1,67 @@
 package eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.fastq.FastqReader;
-import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.FastqQualityFormat;
-import io.swagger.models.auth.In;
 import org.springframework.stereotype.Service;
 import picard.sam.FastqToSam;
 
+import javax.validation.constraints.NotNull;
 import java.io.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
+
+/**
+ * Class for converting FASTQ file to required format (BAM or CRAM)
+ */
 
 @Service
 public class FastqConverter {
-
-    public OutputStream convertToBam(InputStream readedFastqFile){
-        BufferedReader buf = new BufferedReader(new InputStreamReader(readedFastqFile));
-       // BufferedReader buf1 = new BufferedReader(new InputStreamReader(readedFastqFile));
+    /**
+     * Converts fastq to bam
+     *
+     * @param readedFastqFile inputstream from fastq file
+     * @param resultingStream outputstream of converted to bam file
+     * @return resultingStream
+     */
+    public OutputStream convertToBam(@NotNull InputStream readedFastqFile, @NotNull OutputStream resultingStream) throws IOException {
+        BufferedReader buf = null;
+        try {
+           buf = new BufferedReader(new InputStreamReader(new GZIPInputStream(readedFastqFile)));
+        }catch (ZipException e){
+            buf = new BufferedReader(new InputStreamReader(readedFastqFile));
+        }
         FastqReader fastqReader = new FastqReader(buf);
-        //FastqReader read = new FastqReader(buf1);
-        //FastqReader fastqReader = new FastqReader(readedFastqFile,false);
         SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-        OutputStream resultingStream = new ByteArrayOutputStream();
-        SAMFileWriter samFileWriter = writerFactory.makeBAMWriter(new SAMFileHeader(),false,resultingStream);
+        SAMFileWriter samFileWriter = writerFactory.makeBAMWriter(new SAMFileHeader(), false, resultingStream);
         FastqToSam converter = new FastqToSam();
-        converter.QUALITY_FORMAT= FastqQualityFormat.Standard;//FastqToSam.determineQualityFormat(fastqReader,null,null);
-        converter.makeItSo(fastqReader,null,samFileWriter);
+        converter.QUALITY_FORMAT = FastqQualityFormat.Standard;
+        converter.makeItSo(fastqReader, null, samFileWriter);
         return resultingStream;
     }
 
-    public OutputStream convertToCram(InputStream inputBam) {
-        CRAMFileReader reader = new CRAMFileReader(null,inputBam);
-        //reader.
-        return null;
+    /**
+     * converts fastq to cram
+     *
+     * @param inputBam        inputstream from fastq file
+     * @param resultingStream outputstream of converted to cram file
+     * @return resultingStream
+     */
+    public OutputStream convertToCram(@NotNull InputStream inputBam, @NotNull OutputStream resultingStream) {
+        //TODO solve issue wit referencesource
+        CRAMReferenceSource source = ReferenceSource.getDefaultCRAMReferenceSource();
+        CRAMFileWriter writer = new CRAMFileWriter(resultingStream, source, new SAMFileHeader(),
+                "Cramfile");
+        SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(inputBam));
+        SAMRecordIterator recordsIterator = samReader.iterator();
+        writer.setHeader(samReader.getFileHeader());
+        while (recordsIterator.hasNext()) {
+            SAMRecord record = recordsIterator.next();
+            writer.addAlignment(record);
+        }
+        return resultingStream;
     }
 }
