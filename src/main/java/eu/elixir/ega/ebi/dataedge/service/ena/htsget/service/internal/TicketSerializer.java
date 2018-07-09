@@ -35,18 +35,22 @@ public class TicketSerializer extends StdSerializer<RawTicket> {
     @Override
     public void serialize(RawTicket linkToSequence, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeString("htsget");
+        jsonGenerator.writeFieldName("htsget");
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("format", linkToSequence.getFormat());
         jsonGenerator.writeArrayFieldStart("urls");
 
         for (String url : linkToSequence.getFtpLink()) {
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("url", String.format("%s/sample?accesion=%s&format=%s", externalUrl, linkToSequence.getAccession(), linkToSequence.getFormat()));
+            jsonGenerator.writeStringField("url", String.format("%s/sample?accesion=%s&format=%s", "localhost:8080", linkToSequence.getAccession(), linkToSequence.getFormat()));
             jsonGenerator.writeEndObject();
         }
         jsonGenerator.writeEndArray();
         jsonGenerator.writeStringField("md5Hash", linkToSequence.getOverallHash());
+        jsonGenerator.writeEndObject();
+        jsonGenerator.writeEndObject();
+
+
 
     }
 }
