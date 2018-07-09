@@ -21,7 +21,7 @@ public class ENATicketController {
     @RequestMapping(value = "sample/{Biosample_ID}", method = RequestMethod.GET, produces = "application/json")
     public RawTicket getTicket(@PathVariable("Biosample_ID") String biosampleID,
                                @RequestParam(name = "format", required = false, defaultValue = "BAM") String format) throws JsonProcessingException {
-        if((format.equals("BAM")||format.equals("CRAM"))){
+        if(!(format.equals("BAM")||format.equals("CRAM"))){
             throw new UnsupportedFormatException(format);
         }
         return linkService.getLinkToFile(biosampleID,format);

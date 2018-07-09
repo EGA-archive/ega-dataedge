@@ -1,12 +1,10 @@
 package eu.elixir.ega.ebi.dataedge.rest.ena.htsget.controllers;
 
 import eu.elixir.ega.ebi.dataedge.config.NotFoundException;
-import eu.elixir.ega.ebi.dataedge.config.UnsupportedFormatException;
 import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
-import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENATicketService;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAFtpDownloader;
+import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENATicketService;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.FastqConverter;
-import io.swagger.models.auth.In;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,9 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 
 
@@ -42,19 +41,18 @@ public class EnaFileController {
                           @RequestParam(name = "format", defaultValue = "BAM") String format,
                           @RequestParam(name = "part") String part,
                           HttpServletResponse response) throws IOException {
-        if(format.equals("BAM")) {
-            RawTicket ticket = ticketService.getLinkToFile(accession, format);
-            ServletOutputStream responseStream = response.getOutputStream();
-            List<String> urls = ticket.getFtpLink();
-            if(!ticketService.isPartOfFileExist(urls,part)){
-                throw new NotFoundException("This part of file does not exist",part);
-            }
-            InputStream fileStream = downloader.getFastqFile(urls.get(Integer.parseInt(part) - 1));
-            OutputStream convertedFile = converter.convertToBam(fileStream, responseStream);
-        }else if(format.equals("CRAM")){
 
-        }else{
-            throw new UnsupportedFormatException(format);
+        RawTicket ticket = ticketService.getLinkToFile(accession, format);
+        ServletOutputStream responseStream = response.getOutputStream();
+        List<String> urls = ticket.getFtpLink();
+        if(!ticketService.isPartOfFileExist(urls,part)){
+            throw new NotFoundException("This part of file does not exist",part);
+        }
+        InputStream fileStream = downloader.getFastqFile(urls.get(Integer.parseInt(part) - 1));
+        if(format.equals("BAM")) {
+           converter.convertToBam(fileStream, responseStream);
+        }else if(format.equals("CRAM")) {
+            converter.convertToCram(fileStream, responseStream);
         }
     }
 
@@ -63,21 +61,28 @@ public class EnaFileController {
                         @RequestParam(name = "format", defaultValue = "BAM") String format,
                         @RequestParam(name = "part") String part,
                         HttpServletResponse response) throws IOException {
-        if(format.equals("BAM")) {
-            RawTicket ticket = ticketService.getLinkToFile(accession, format);
-            ServletOutputStream responseStream = response.getOutputStream();
-            response.setHeader(HEADER_KEY, String.format(HEADER_VALUE, accession, part, format));
-            List<String> urls = ticket.getFtpLink();
-            if(!ticketService.isPartOfFileExist(urls,part)){
+
+        RawTicket ticket = ticketService.getLinkToFile(accession, format);
+        ServletOutputStream responseStream = response.getOutputStream();
+        response.setHeader(HEADER_KEY, String.format(HEADER_VALUE, accession, part, format));
+        List<String> urls = ticket.getFtpLink();
+        if(!ticketService.isPartOfFileExist(urls,part)){
                 throw new NotFoundException("This part of file does not exist",part);
-            }
-            InputStream fileStream = downloader.getFastqFile(urls.get(Integer.parseInt(part) - 1));
-            OutputStream convertedFile = converter.convertToBam(fileStream, responseStream);
+        }
+        InputStream fileStream = downloader.getFastqFile(urls.get(Integer.parseInt(part) - 1));
+        if(format.equals("BAM")) {
+            converter.convertToBam(fileStream, responseStream);
         }
         else if(format.equals("CRAM")){
-
-        }else{
-            throw new UnsupportedFormatException(format);
+            converter.convertToCram(fileStream, responseStream);
         }
+    }
+
+    @RequestMapping("/testbam")
+    public void getFile(HttpServletResponse response) throws IOException {
+        File file1 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\Test100k.fastq.gz");
+        FileInputStream fileIn = new FileInputStream(file1);
+        response.setHeader(HEADER_KEY, String.format(HEADER_VALUE,"a","b","bam"));
+        converter.convertToBam(fileIn,response.getOutputStream());
     }
 }

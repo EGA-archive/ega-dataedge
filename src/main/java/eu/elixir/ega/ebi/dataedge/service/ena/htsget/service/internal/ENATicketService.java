@@ -6,6 +6,7 @@ import com.jsunsoft.http.HttpRequest;
 import com.jsunsoft.http.HttpRequestBuilder;
 import com.jsunsoft.http.ResponseDeserializer;
 import com.jsunsoft.http.ResponseHandler;
+import eu.elixir.ega.ebi.dataedge.config.UnsupportedFormatException;
 import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.SequenceLinkService;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,9 @@ public class ENATicketService implements SequenceLinkService {
     @Override
     public RawTicket getLinkToFile(String accession, String format) {
         //TODO move link to properties
+        if(!isThisSupportedFormat(format)){
+            throw new UnsupportedFormatException("Format is not supported. Should be BAM or CRAM");
+        }
         HttpRequest<String> request = HttpRequestBuilder.
                 createGet(String.format("https://www.ebi.ac.uk/ena/portal/api/filereport?result=read_run&accession=%s&format=json",accession), String.class)
                 .responseDeserializer(ResponseDeserializer.ignorableDeserializer())
@@ -58,8 +62,10 @@ public class ENATicketService implements SequenceLinkService {
     }
 
     public boolean isPartOfFileExist(List<String>urls,String part){
-        return urls.size() > Integer.parseInt(part);
+        return urls.size() >= Integer.parseInt(part);
     }
-
+    private boolean isThisSupportedFormat(String format){
+        return format.equals("BAM") || format.equals("CRAM");
+    }
 }
 
