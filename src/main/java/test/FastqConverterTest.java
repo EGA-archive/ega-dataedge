@@ -1,44 +1,40 @@
 package test;
 
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.FastqConverter;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.zip.GZIPInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FastqConverterTest {
 
     @Test
-    public void converterTest() throws IOException {
+    public void converterTest() throws IOException, InterruptedException {
         FastqConverter converter = new FastqConverter();
         File file1 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\Test100k.fastq.gz");
-        File expectedFile = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k_expected.bam");
+        File expectedFile = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k_unsorted.bam");
         FileInputStream fileIn = new FileInputStream(file1);
-       // GZIPInputStream stream = new GZIPInputStream(fileIn);
         FileOutputStream bamStream = new FileOutputStream("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k.bam");
         converter.convertToBam(fileIn,bamStream);
         File file2 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k.bam");
-        System.out.println(file2.length());
-
-        assertTrue(fileEquals(expectedFile,file2));
+        assertTrue(FileUtils.contentEquals(file2,expectedFile));
     }
 
     @Test
-    public void cramConverterTest1() throws IOException {
+    public void cramConverterTest1() throws IOException, InterruptedException {
         FastqConverter converter = new FastqConverter();
         File file1 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k_expected.bam");
         File expectedFile = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k.cram");
         FileInputStream fileIn = new FileInputStream(file1);
         FileOutputStream fos = new FileOutputStream("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k_test.cram");
         converter.convertToCram(fileIn,fos);
-        fos.flush();
-        fos.close();
         File file2 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\test100k_test.cram");
+
         assertTrue(fileEquals(expectedFile,file2));
 
     }
