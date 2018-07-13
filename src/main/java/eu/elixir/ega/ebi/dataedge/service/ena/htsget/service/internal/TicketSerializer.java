@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
 public class TicketSerializer extends StdSerializer<RawTicket> {
 
-    @Value("${ega.ega.external.url}")
-    protected String externalUrl;
+    private final String SERVICE_URL = "http://DOWNLOADER";
 
     protected TicketSerializer() { super(RawTicket.class);}
 
@@ -39,11 +37,12 @@ public class TicketSerializer extends StdSerializer<RawTicket> {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("format", linkToSequence.getFormat());
         jsonGenerator.writeArrayFieldStart("urls");
-
+        Integer i = 1;
         for (String url : linkToSequence.getFtpLink()) {
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("url", String.format("%s/sample?accesion=%s&format=%s", "localhost:8080", linkToSequence.getAccession(), linkToSequence.getFormat()));
+            jsonGenerator.writeStringField("url", String.format("%s/sample?accession=%s&format=%s&part=%s", SERVICE_URL, linkToSequence.getAccession(), linkToSequence.getFormat(), i.toString()));
             jsonGenerator.writeEndObject();
+            i++;
         }
         jsonGenerator.writeEndArray();
         jsonGenerator.writeStringField("md5Hash", linkToSequence.getOverallHash());
