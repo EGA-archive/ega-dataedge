@@ -8,17 +8,17 @@ import com.jsunsoft.http.ResponseDeserializer;
 import com.jsunsoft.http.ResponseHandler;
 import eu.elixir.ega.ebi.dataedge.config.UnsupportedFormatException;
 import eu.elixir.ega.ebi.dataedge.dto.ena.dto.RawTicket;
-import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.SequenceLinkService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * Class for creating ticket (htsget)
  */
 @Service
-public class ENATicketService implements SequenceLinkService {
+public class ENATicketService {
 
     /**
      * gets link to fastq file for given accession and additional data for this accession (size of file and md5 hash),
@@ -28,7 +28,6 @@ public class ENATicketService implements SequenceLinkService {
      * @param format    format of file
      * @return raw tiket to sequences
      */
-    @Override
     public RawTicket getLinkToFile(String accession, String format) {
         //TODO move link to properties
         if(!isThisSupportedFormat(format)){
@@ -47,10 +46,32 @@ public class ENATicketService implements SequenceLinkService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        String fastq_ftp = "";
+        String fastq_bytes = "";
+        String fastq_md5 = "";
+        Iterator<JsonNode> nodes = node.iterator();
 
-        String fastq_ftp = node.findValue("fastq_ftp").textValue();
-        String fastq_md5 = node.findValue("fastq_md5").textValue();
-        String fastq_bytes = node.findValue("fastq_bytes").textValue();
+        while(nodes.hasNext()) {
+            JsonNode currentNode = nodes.next();
+            String current_fastq_ftp = currentNode.findValue("fastq_ftp").textValue();
+            String current_fastq_bytes = currentNode.findValue("fastq_bytes").textValue();
+            String current_fastq_md5 = currentNode.findValue("fastq_md5").textValue();
+            if(!fastq_ftp.isEmpty()) {
+                fastq_ftp = fastq_ftp.concat(";" + current_fastq_ftp);
+            }else{
+                fastq_ftp = current_fastq_ftp;
+            }
+            if(!fastq_bytes.isEmpty()) {
+                fastq_bytes = fastq_bytes.concat(";" + current_fastq_bytes);
+            }else {
+                fastq_bytes = current_fastq_bytes;
+            }
+            if(fastq_md5.isEmpty()){
+                fastq_md5 = current_fastq_md5;
+            }else {
+                fastq_md5 = fastq_md5.concat(";"+current_fastq_md5);
+            }
+        }
 
         RawTicket link = new RawTicket();
         link.setAccession(accession);
