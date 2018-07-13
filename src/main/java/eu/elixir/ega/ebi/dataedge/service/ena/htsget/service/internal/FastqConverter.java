@@ -2,11 +2,10 @@ package eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal;
 
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import net.sf.cram.ref.ReferenceSource;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.util.FastqQualityFormat;
 import htsjdk.samtools.util.Log;
-import net.sf.cram.ref.ReferenceSource;
 import org.springframework.stereotype.Service;
 import picard.sam.FastqToSam;
 
@@ -25,7 +24,7 @@ import static htsjdk.samtools.ValidationStringency.STRICT;
 @Service
 public class FastqConverter {
     /**
-     * Converts fastq to bam
+     * Converts fastq to bam. This function do convertation exactly as picard command line app.
      *
      * @param readedFastqFile inputstream from fastq file
      * @param resultingStream outputstream of converted to bam file
@@ -42,7 +41,7 @@ public class FastqConverter {
         SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
         FastqToSam converter = new FastqToSam();
         SAMReadGroupRecord rgroup = new SAMReadGroupRecord("A");
-        rgroup.setSample("for_tool_testing");
+        rgroup.setSample("fastq_file_converted_to_bam");
         SAMFileHeader header = new SAMFileHeader();
         header.addReadGroup(rgroup);
         header.setComments(new ArrayList<>());
@@ -57,13 +56,13 @@ public class FastqConverter {
         converter.QUIET=false;
         converter.VALIDATION_STRINGENCY=STRICT;
         converter.COMPRESSION_LEVEL=5;
-        converter.MAX_RECORDS_IN_RAM=700000;
+        converter.MAX_RECORDS_IN_RAM=500000;
         converter.CREATE_INDEX=false;
         converter.CREATE_MD5_FILE=false;
         converter.USE_JDK_DEFLATER=false;
         converter.USE_JDK_INFLATER=false;
         converter.SORT_ORDER = SAMFileHeader.SortOrder.unsorted;
-        converter.SAMPLE_NAME="for_tool_testing";
+        converter.SAMPLE_NAME="fastq_file_converted_to_bam";
         converter.GA4GH_CLIENT_SECRETS="client_secrets.json";
         header=converter.createSamFileHeader().clone();
         SAMFileWriter samFileWriter = writerFactory.makeBAMWriter(header.clone(), false, resultingStream);
@@ -81,8 +80,8 @@ public class FastqConverter {
      * @param resultingStream outputstream of converted to cram file
      * @return resultingStream
      */
-    public OutputStream convertToCram(@NotNull InputStream inputBam, @NotNull OutputStream resultingStream) throws IOException {
-        CRAMReferenceSource source = new ReferenceSource();
+    public OutputStream convertToCram(@NotNull InputStream inputBam, @NotNull OutputStream resultingStream) {
+        ReferenceSource source = new ReferenceSource();
         SamReaderFactory samReaderFactory= SamReaderFactory.makeDefault().validationStringency(ValidationStringency.DEFAULT_STRINGENCY);
         SamReader samReader = samReaderFactory.open(SamInputResource.of(inputBam));
         CRAMFileWriter writer = new CRAMFileWriter(resultingStream, source, samReader.getFileHeader(),
@@ -90,11 +89,16 @@ public class FastqConverter {
         SAMFileHeader header = samReader.getFileHeader();
         SAMRecordIterator recordsIterator = samReader.iterator();
         writer.setHeader(header.clone());
+        writer.setPreserveReadNames(false);
 
         while (recordsIterator.hasNext()) {
             SAMRecord record = recordsIterator.next();
             writer.addAlignment(record);
         }
+
+        recordsIterator.close();
+        writer.close();
+
         return resultingStream;
     }
 }
