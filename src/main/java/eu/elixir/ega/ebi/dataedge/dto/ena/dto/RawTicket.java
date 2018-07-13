@@ -59,7 +59,7 @@ public class RawTicket {
     }
 
     public String getOverallHash() {
-        if (ftpLink.size() == 0 || ftpLink.size() > 1) {
+        if (md5Hashs.size() == 0 || md5Hashs.size() > 1) {
             return "";
         } else {
             return md5Hashs.get(0); // return hash only if there only one file(hash)

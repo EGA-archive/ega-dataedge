@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -78,11 +76,4 @@ public class EnaFileController {
         }
     }
 
-    @RequestMapping("/testbam")
-    public void getFile(HttpServletResponse response) throws IOException {
-        File file1 = new File("C:\\Users\\dilsc\\Desktop\\ega-dataedge\\Test100k.fastq.gz");
-        FileInputStream fileIn = new FileInputStream(file1);
-        response.setHeader(HEADER_KEY, String.format(HEADER_VALUE,"a","b","bam"));
-        converter.convertToBam(fileIn,response.getOutputStream());
-    }
 }
