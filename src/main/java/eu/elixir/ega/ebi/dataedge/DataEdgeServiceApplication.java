@@ -15,23 +15,20 @@
  */
 package eu.elixir.ega.ebi.dataedge;
 
-import eu.elixir.ega.ebi.dataedge.config.MyConfiguration;
-import eu.elixir.ega.ebi.dataedge.config.OAuth2ResourceConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import eu.elixir.ega.ebi.dataedge.config.MyConfiguration;
+import eu.elixir.ega.ebi.dataedge.config.OAuth2ResourceConfig;
 
 @Configuration
 @EnableCaching
-//@EnableCircuitBreaker
-//@EnableHystrix
 @SpringBootApplication
 @Import({MyConfiguration.class, OAuth2ResourceConfig.class})
-@EnableSwagger2
 @EnableEurekaClient
 public class DataEdgeServiceApplication {
 
