@@ -46,11 +46,11 @@ import java.util.concurrent.TimeUnit;
 @EnableCaching
 @EnableRetry
 public class MyConfiguration {
-    @Value("${ega.ega.external.url}")
+//    @Value("${ega.ega.external.url}")
     String externalUrl;
-    @Value("${ega.ega.cram.fasta.a}")
+//    @Value("${ega.ega.cram.fasta.a}")
     String cramFastaReferenceA;
-    @Value("${ega.ega.cram.fasta.b}")
+//    @Value("${ega.ega.cram.fasta.b}")
     String cramFastaReferenceB;
 
     // Ribbon Load Balanced Rest Template for communication with other Microservices
@@ -145,6 +145,9 @@ public class MyConfiguration {
 
     @Bean
     public MyExternalConfig MyArchiveConfig() {
+        externalUrl = "localhost:8080";
+        cramFastaReferenceA ="";
+        cramFastaReferenceB ="";
         return new MyExternalConfig(externalUrl, cramFastaReferenceA, cramFastaReferenceB);
     }
 }

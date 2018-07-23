@@ -18,7 +18,6 @@ package eu.elixir.ega.ebi.dataedge.service.internal;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import eu.elixir.ega.ebi.dataedge.config.NotFoundException;
-import eu.elixir.ega.ebi.dataedge.config.VerifyMessage;
 import eu.elixir.ega.ebi.dataedge.config.VerifyMessageNew;
 import eu.elixir.ega.ebi.dataedge.dto.*;
 import eu.elixir.ega.ebi.dataedge.service.TicketService;
