@@ -84,7 +84,7 @@ public class MetadataController {
     Iterable<File> getDatasetFiles(@PathVariable String dataset_id,
                                    HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Map<String, String[]> parameters = request.getParameterMap();
+        //Map<String, String[]> parameters = request.getParameterMap();
 
         // Validate Dataset Access
         boolean permission = false;

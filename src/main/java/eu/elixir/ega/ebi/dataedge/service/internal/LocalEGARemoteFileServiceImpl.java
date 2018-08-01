@@ -58,8 +58,8 @@ import java.util.*;
 @EnableDiscoveryClient
 public class LocalEGARemoteFileServiceImpl implements FileService {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
-    private final String RES_URL = "http://RES";
+    private final String SERVICE_URL = "http://FILEDATABASE";
+    private final String RES_URL = "http://RES2";
 
     @Autowired
     private RestTemplate restTemplate;
@@ -369,13 +369,13 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         dle.setFileId(fileId);
         dle.setClientIp(clientIp);
         dle.setEmail(email);
-        dle.setDownloadProtocol("http");
-        dle.setServer(server);
+        dle.setApi(server);
         dle.setEncryptionType(encryptionType);
         dle.setStartCoordinate(startCoordinate);
         dle.setEndCoordinate(endCoordinate);
         dle.setBytes(bytes);
         dle.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()));
+        dle.setTokenSource("EGA");
 
         return dle;
     }
@@ -387,7 +387,6 @@ public class LocalEGARemoteFileServiceImpl implements FileService {
         eev.setEventId("0");
         eev.setClientIp(clientIp);
         eev.setEvent(t);
-        eev.setDownloadTicket(ticket);
         eev.setEventType("Error");
         eev.setEmail(email);
         eev.setCreated(new java.sql.Timestamp(Calendar.getInstance().getTime().getTime()));

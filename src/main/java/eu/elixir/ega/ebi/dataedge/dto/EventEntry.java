@@ -35,7 +35,6 @@ public class EventEntry implements Serializable {
     private String eventId;
     private String clientIp;
     private String event;
-    private String downloadTicket;
     private String eventType;
     private String email;
     private Timestamp created;
@@ -45,7 +44,6 @@ public class EventEntry implements Serializable {
         return "EventEntry [eventId=" + eventId +
                 ", clientIp=" + clientIp +
                 ", event=" + event +
-                ", downloadTicket=" + downloadTicket +
                 ", eventType=" + eventType +
                 ", email=" + email +
                 ", created=" + created + "]";

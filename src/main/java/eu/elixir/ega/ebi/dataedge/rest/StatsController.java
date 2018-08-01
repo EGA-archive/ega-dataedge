@@ -32,6 +32,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import static org.springframework.web.bind.annotation.RequestMethod.OPTIONS;
 
 /**
@@ -84,7 +85,7 @@ System.out.println("Adding Header load");
         response.addHeader("Access-Control-Request-Method", "GET");
 System.out.println("Adding Header testme");
     }
-    @RequestMapping(value = "/testme", method = GET)
+    @RequestMapping(value = "/testme", method = {GET,POST})
     @ResponseBody
     public String testme(HttpServletRequest servletRequest, @RequestHeader HttpHeaders headers) {
 
@@ -93,7 +94,9 @@ System.out.println("Adding Header testme");
         result = "Headers: ";
         Set<String> keySet = headers.keySet();
         for (String k : keySet) {
+            System.out.println(k);
             result += k + " ";
+            System.out.println(k + ": " + headers.get(k));
         }
 
         if (headers.containsKey("X-Permissions")) {

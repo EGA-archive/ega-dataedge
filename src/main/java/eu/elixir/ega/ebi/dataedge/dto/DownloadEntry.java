@@ -34,32 +34,32 @@ public class DownloadEntry implements Serializable {
 
     private Long downloadLogId;
     private String clientIp;
-    private String server;
+    private String api;
     private String email;
     private String fileId;
     private double downloadSpeed;
     private String downloadStatus;
-    private String downloadProtocol;
     private String encryptionType;
     private Long startCoordinate;
     private Long endCoordinate;
     private Long bytes;
     private Timestamp created;
+    private String tokenSource;
 
     @Override
     public String toString() {
         return "DownloadEntry [downloadLogId=" + downloadLogId +
                 ", clientIp=" + clientIp +
-                ", server=" + server +
+                ", server=" + api +
                 ", email=" + email +
                 ", fileId=" + fileId +
                 ", downloadSpeed=" + downloadSpeed +
                 ", downloadStatus=" + downloadStatus +
-                ", downloadProtocol=" + downloadProtocol +
                 ", encryptionType=" + encryptionType +
                 ", startCoordinate=" + startCoordinate +
                 ", endCoordinate=" + endCoordinate +
                 ", bytes=" + bytes +
-                ", created=" + created + "]";
+                ", created=" + created + 
+                ", TokenSource=" + tokenSource + "]";
     }
 }

@@ -49,7 +49,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableDiscoveryClient
 public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
 
     @Autowired
     AsyncRestTemplate restTemplate;
@@ -67,7 +67,7 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        InstanceInfo instance = discoveryClient.getNextServerFromEureka("DOWNLOADER", false);
+        InstanceInfo instance = discoveryClient.getNextServerFromEureka("FILEDATABASE", false);
         String logUrl = instance.getHomePageUrl();
     
         // Jackson ObjectMapper to convert requestBody to JSON
@@ -112,7 +112,7 @@ public class RemoteDownloaderLogServiceImpl implements DownloaderLogService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        InstanceInfo instance = discoveryClient.getNextServerFromEureka("DOWNLOADER", false);
+        InstanceInfo instance = discoveryClient.getNextServerFromEureka("FILEDATABASE", false);
         String logUrl = instance.getHomePageUrl();
     
         // Jackson ObjectMapper to convert requestBody to JSON

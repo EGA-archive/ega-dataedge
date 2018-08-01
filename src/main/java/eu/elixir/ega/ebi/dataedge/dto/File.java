@@ -30,9 +30,10 @@ import lombok.Setter;
 public class File {
     private String fileId;
     private String datasetId;
+    private String displayFileName;
     private String fileName;
     private long fileSize;
-    private String checksum;
-    private String checksumType;
+    private String unencryptedChecksum;
+    private String unencryptedChecksumType;
     private String fileStatus;
 }

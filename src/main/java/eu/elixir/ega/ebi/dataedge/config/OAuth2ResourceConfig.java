@@ -78,7 +78,7 @@ public class OAuth2ResourceConfig extends ResourceServerConfigurerAdapter {
                     .antMatchers("/tickets/**")
                     .antMatchers("/demo/**")
                     .antMatchers("/download/file/**")
-                    .antMatchers("/stats/testme")
+                    //.antMatchers("/stats/testme")
                 .and()
                 .authorizeRequests()
                     .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()

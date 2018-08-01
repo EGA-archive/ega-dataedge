@@ -43,7 +43,7 @@ import java.util.Iterator;
 @EnableDiscoveryClient
 public class RemoteFileMetaServiceImpl implements FileMetaService {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
 
     @Autowired
     RestTemplate restTemplate;
@@ -54,6 +54,8 @@ public class RemoteFileMetaServiceImpl implements FileMetaService {
     public File getFile(Authentication auth, String file_id) {
         ResponseEntity<FileDataset[]> forEntityDataset = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}/datasets", FileDataset[].class, file_id);
         FileDataset[] bodyDataset = forEntityDataset.getBody();
+//for (int i=0; i<bodyDataset.length; i++)
+//    System.out.println("(1) ["+i+"] " + bodyDataset[i].getFileId() + ", " + bodyDataset[i].getDatasetId());
 
         // Obtain all Authorised Datasets
         HashSet<String> permissions = new HashSet<>();
@@ -61,11 +63,16 @@ public class RemoteFileMetaServiceImpl implements FileMetaService {
         Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
         while (iterator.hasNext()) {
             GrantedAuthority next = iterator.next();
+//String x = next.getAuthority();
+//System.out.println("(2) " + x);
+//permissions.add(x);
             permissions.add(next.getAuthority());
         }
 
         // Is this File in at least one Authorised Dataset?
         ResponseEntity<File[]> forEntity = restTemplate.getForEntity(SERVICE_URL + "/file/{file_id}", File[].class, file_id);
+//for (int j=0; j<forEntity.getBody().length; j++)
+//    System.out.println("(3) ["+j+"] " +forEntity.getBody()[j].getFileName() );
         File[] body = forEntity.getBody();
         if (body != null && bodyDataset != null) {
             for (FileDataset f : bodyDataset) {

@@ -52,7 +52,7 @@ import eu.elixir.ega.ebi.dataedge.dto.FileDataset;
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class RemoteFileMetaServiceImplTest {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
     private final String DATASET1 = "DATASET1";
     private final String DATASET2 = "DATASET2";
     private final String FILEID = "fileId";

@@ -75,7 +75,7 @@ public class RemoteDownloaderLogServiceImplTest {
         final ListenableFuture<ResponseEntity<Object>> futureEntityMock = mock(ListenableFuture.class);
 
         whenNew(URI.class).withAnyArguments().thenReturn(uriMock);
-        when(discoveryClient.getNextServerFromEureka("DOWNLOADER", false)).thenReturn(instance);
+        when(discoveryClient.getNextServerFromEureka("FILEDATABASE", false)).thenReturn(instance);
         when(restTemplate.postForEntity(any(), any(), any())).thenReturn(futureEntityMock);
     }
 

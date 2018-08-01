@@ -80,8 +80,8 @@ import htsjdk.variant.vcf.VCFHeader;
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class RemoteFileServiceImplTest {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
-    private final String RES_URL = "http://RES";
+    private final String SERVICE_URL = "http://FILEDATABASE";
+    private final String RES_URL = "http://RES2";
     private final String DATASET1 = "DATASET1";
     private final String DATASET2 = "DATASET2";
     private final String FILEID = "fileId";
@@ -297,8 +297,8 @@ public class RemoteFileServiceImplTest {
                 .thenReturn(forSize);
         when(restTemplate.execute(any(), any(), any(), any())).thenReturn(xferResult);
         when(instance.getHomePageUrl()).thenReturn(HOMEPAGE_URL);
-        when(discoveryClient.getNextServerFromEureka("RES", false)).thenReturn(instance);
-        when(discoveryClient.getNextServerFromEureka("DOWNLOADER", false)).thenReturn(instance);
+        when(discoveryClient.getNextServerFromEureka("RES2", false)).thenReturn(instance);
+        when(discoveryClient.getNextServerFromEureka("FILEDATABASE", false)).thenReturn(instance);
     }
 
 }

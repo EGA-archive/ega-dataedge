@@ -64,7 +64,7 @@ import eu.elixir.ega.ebi.dataedge.dto.MyExternalConfig;
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class RemoteTicketServiceImplTest {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
     private final String FILEID = "fileId";
     private final String DATASET1 = "DATASET1";
     private final String DATASET2 = "DATASET2";

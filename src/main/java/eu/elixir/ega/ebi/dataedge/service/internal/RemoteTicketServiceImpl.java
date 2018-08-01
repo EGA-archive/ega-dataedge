@@ -51,7 +51,7 @@ import java.util.*;
 @EnableDiscoveryClient
 public class RemoteTicketServiceImpl implements TicketService {
 
-    private final String SERVICE_URL = "http://DOWNLOADER";
+    private final String SERVICE_URL = "http://FILEDATABASE";
 
     @Autowired
     MyExternalConfig externalConfig;

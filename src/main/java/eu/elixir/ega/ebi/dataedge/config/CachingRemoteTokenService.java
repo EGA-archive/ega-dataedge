@@ -44,7 +44,7 @@ public class CachingRemoteTokenService extends RemoteTokenServices {
     }
 
     @Override
-    @Cacheable(cacheNames = "access", key = "#root.methodName + #accessToken")
+    @Cacheable(cacheNames = "tokens", key = "#root.methodName + #accessToken")
     public OAuth2AccessToken readAccessToken(String accessToken) {
         log.info("readAccessToken: " + accessToken);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
