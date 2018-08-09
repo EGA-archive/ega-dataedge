@@ -2,31 +2,34 @@ package test;
 
 import eu.elixir.ega.ebi.dataedge.service.ena.htsget.service.internal.ENAFtpDownloader;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.*;
-import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertTrue;
 
-class ENAftpDownloaderTest {
+@RunWith(SpringRunner.class)
+public class ENAftpDownloaderTest {
     /**
      * For running this test you need to put into root folder of project ERR1777637_1.fastq.gz
      from ftp.sra.ebi.ac.uk/vol1/fastq/SRR921/SRR921499/SRR921499.fastq.gz
      **/
     @Test
     public void downloadingTest1() throws IOException {
-        String pathToExpectedFile = "/Users/dilsatsalihov/Desktop/gsoc/ega-dataedge/SRR921499.fastq.gz";
-        File expectedFile = new File(pathToExpectedFile);
+        ClassLoader classLoader = getClass().getClassLoader();
+        File expectedFile = new File(classLoader.getResource("SRR921499.fastq.gz").getFile());
         ENAFtpDownloader downloader = new ENAFtpDownloader();
         InputStream receivedStream = downloader.getFastqFile("ftp.sra.ebi.ac.uk/vol1/fastq/SRR921/SRR921499/SRR921499.fastq.gz");
         File downloadedFile = writeToFile(receivedStream);
         assertTrue(FileUtils.contentEquals(expectedFile,downloadedFile));
+        downloadedFile.delete();
     }
 
     public File writeToFile(InputStream inputStream){
         OutputStream outputStream = null;
-        File file = new File("/Users/dilsatsalihov/Desktop/gsoc/ega-dataedge/2.4MB_test.zip");
+        File file = new File("2.4MB_test.zip");
         try {
 
             // write the inputStream to a FileOutputStream
@@ -64,6 +67,8 @@ class ENAftpDownloaderTest {
         }
         return file;
     }
+
+
 
 
 
